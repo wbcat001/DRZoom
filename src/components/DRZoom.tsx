@@ -76,6 +76,14 @@ const App: React.FC = () => {
       .append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
+    var tooltip = d3.select("body")
+        .append("div")
+        .style("position", "absolute")
+        .style("z-index", "10")
+        .style("visibility", "hidden")
+        .style("background", "#ffffff")
+        .text("a simple tooltip");
+
     g.selectAll('.dot')
       .data(data, (d: unknown) => (d as DataPoint).index)
       .enter()
@@ -84,14 +92,27 @@ const App: React.FC = () => {
       .attr('r', 3)
       .attr('cx', (d) => x(d.x))
       .attr('cy', (d) => y(d.y))
-      .style('fill', 'blue');
+      .style('fill', 'blue')
+      .text(function(d: DataPoint) {
+        return d.index;
+      })
+       .on("mouseover", function(event, d){
+        // tooltip.text(event); 
+        return tooltip.style("visibility", "visible")
+                    .text("index: "+d.index+" x: "+d.x+" y: "+d.y);
+        })
+      .on("mousemove", function(event){return tooltip.style("top", (event.pageY-10)+"px").style("left",(event.pageX+10)+"px");})
+      .on("mouseout", function(){return tooltip.style("visibility", "hidden");});
+      
+      
 
     const zoom = d3.zoom<SVGSVGElement, unknown>().scaleExtent([1, 10]).on('zoom', zoomed);
 
     
     svg.call(zoom as any);
     
-
+    // Zoom interacton
+    // filter, fetch data, update data
     function zoomed(event: d3.D3ZoomEvent<SVGSVGElement, unknown>) {
       const transform = event.transform;
 
@@ -112,7 +133,7 @@ const App: React.FC = () => {
       const selectedIndexes = selectedData.map((d) => d.index);
       console.log('Selected Indexes:', selectedData);
       setSelectedIndexes(selectedIndexes); // Store selected indexes in state
-    //   console.log('Selected Indexes:', selectedIndexes.length);
+
 
       // Send the selected data to the Python API
       sendDataToAPI(selectedIndexes);
