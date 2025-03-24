@@ -7,6 +7,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 from typing import List
 from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -15,14 +16,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 # Generate dummy data (1000 rows, 10 dimensions)
 data = np.random.rand(1000, 10)
 
-class PCARequest(BaseModel):
+class UpdateRequest(BaseModel):
     filter: List[int]
 
-@app.post("/pca/update")
-async def pca(request: PCARequest):
+@app.post("/update")
+async def pca(request: UpdateRequest):
+    """
+    
+    """
     # Filter the data using the provided indices
     filter_array = np.array(request.filter)
     data_filtered = data[filter_array]
@@ -38,7 +43,7 @@ async def pca(request: PCARequest):
 
 class InitRequest(BaseModel):
     options: str
-@app.post("/pca/init")
+@app.post("/init")
 async def pca_init(InitRequest: InitRequest):
     pca = PCA(n_components=2)
     result = pca.fit_transform(data).tolist()
@@ -49,10 +54,14 @@ async def pca_init(InitRequest: InitRequest):
 
 
     return {"data":result}
+
 ## 実行コマンド
 # uvicorn server:app --reload
 # http://
 
 @app.get("/")
 async def root():
+    """
+    Test endpoint
+    """
     return {"message": "Hello World"}
