@@ -9,3 +9,4 @@ class MainHandler:
         self.data_handler = DataHandler(dir_path)
         self.alignment_handler = AlignmentHandler()
         self.dimensinal_reduce_handler = DimensinalReduceHandler("pca", 2)
+        
