@@ -1,9 +1,13 @@
+
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from model.high_dimensional_data import HighDimensionalData
 from model.data import Data
 from model.metadata import MetaData
 
 from typing import List
-import os
 import numpy as np
 import pandas as pd
 

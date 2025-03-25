@@ -9,3 +9,12 @@
 を行う
 
 """
+
+class TransitionData:
+    def __init__(self, data, frame:int=2):
+        self.data = data
+        self.frame = frame
+
+class VisualizeHandler:
+    def __init__(self, data, index):
+        

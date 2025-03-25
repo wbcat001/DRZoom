@@ -33,7 +33,7 @@ class TSNEDimensionalReducer(DimensionalReducer):
         return self.reducer.fit_transform(X)
     
 
-class DimensinalReduceHandler:
+class DimensionalReduceHandler:
     def __init__(self, method: DimensionalReduceMethodType = "pca", n_components:int = 2):
         self.method:DimensionalReduceMethodType = method
         self.n_components = n_components
@@ -57,7 +57,7 @@ class DimensinalReduceHandler:
         return self.reducer.fit_transform(X)
     
 if __name__ == "__main__":
-    handler = DimensinalReduceHandler()
+    handler = DimensionalReduceHandler()
     data = np.random.rand(1000, 10)
     reduced_data = handler.reduce(data)
     print(reduced_data[:10])
