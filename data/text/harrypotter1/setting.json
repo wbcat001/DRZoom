@@ -1,0 +1,1204 @@
+[
+    [
+        {
+            "time": "day",
+            "location": {
+                "general": "house",
+                "specific": "Dursleys' house"
+            },
+            "locationtype": "INT",
+            "range": [
+                1,
+                6
+            ],
+            "reason": "The text describes the morning routine of the Dursleys within their home."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "street",
+                "specific": "Privet Drive"
+            },
+            "locationtype": "EXT",
+            "range": [
+                6,
+                8
+            ],
+            "reason": "Mr. Dursley drives out of the Dursleys' house and observes peculiar events occurring outside on Privet Drive."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "office",
+                "specific": "Grunnings office"
+            },
+            "locationtype": "INT",
+            "range": [
+                9,
+                12
+            ],
+            "reason": "The narrative shifts to Mr. Dursley's office, where he is preoccupied with work and incidents from earlier in the day."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "street",
+                "specific": "near bakery"
+            },
+            "locationtype": "EXT",
+            "range": [
+                13,
+                19
+            ],
+            "reason": "Mr. Dursley walks outside to the bakery and reflects on the unusual occurrences while he is still outside."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "house",
+                "specific": "Dursleys' living room"
+            },
+            "locationtype": "INT",
+            "range": [
+                17,
+                21
+            ],
+            "reason": "After the Dursleys return home, the scene describes their dinner and Mr. Dursley's uneasy feelings, which take place in the evening."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "street",
+                "specific": "Privet Drive"
+            },
+            "locationtype": "EXT",
+            "range": [
+                33,
+                91
+            ],
+            "reason": "This section introduces new characters and events outside the Dursleys' house during the night, marked by the appearance of Dumbledore and McGonagall."
+        }
+    ],
+    [
+        {
+            "time": "night",
+            "location": {
+                "general": "house",
+                "specific": "Harry's bedroom"
+            },
+            "locationtype": "INT",
+            "range": [
+                93,
+                93
+            ],
+            "reason": "The scene opens in a quiet, dark room where Harry is asleep, indicating it's nighttime."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "house",
+                "specific": "Dursleys' house"
+            },
+            "locationtype": "INT",
+            "range": [
+                94,
+                136
+            ],
+            "reason": "The following paragraphs describe the Dursleys' household in the morning as they prepare for Dudley's birthday, indicating the transition from night to day."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "car",
+                "specific": "Dursleys' car"
+            },
+            "locationtype": "INT",
+            "range": [
+                139,
+                148
+            ],
+            "reason": "Harry is in the car on the way to the zoo, which happens during the day."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "zoo",
+                "specific": "reptile house"
+            },
+            "locationtype": "EXT",
+            "range": [
+                151,
+                176
+            ],
+            "reason": "The scene takes place at the zoo, starting in the reptile house where assorted animals are observed."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "house",
+                "specific": "Harry's cupboard"
+            },
+            "locationtype": "INT",
+            "range": [
+                177,
+                179
+            ],
+            "reason": "The narrative returns to Harry in the confinement of his cupboard at night after the events at the zoo."
+        }
+    ],
+    [
+        {
+            "time": "day",
+            "location": {
+                "general": "school",
+                "specific": "playground"
+            },
+            "locationtype": "EXT",
+            "range": [
+                180,
+                180
+            ],
+            "reason": "The text describes Harry at school, implying it is daytime."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "house",
+                "specific": "kitchen"
+            },
+            "locationtype": "INT",
+            "range": [
+                188,
+                192
+            ],
+            "reason": "Harry is in the kitchen during breakfast time, which is during the day."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "house",
+                "specific": "living room"
+            },
+            "locationtype": "INT",
+            "range": [
+                186,
+                186
+            ],
+            "reason": "Dudley is showing off his new school uniform in the living room, during the day."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "house",
+                "specific": "mailroom"
+            },
+            "locationtype": "INT",
+            "range": [
+                193,
+                198
+            ],
+            "reason": "Harry is retrieving the mail, indicating that it's during the day."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "house",
+                "specific": "kitchen"
+            },
+            "locationtype": "INT",
+            "range": [
+                205,
+                207
+            ],
+            "reason": "The action takes place in the kitchen during breakfast time."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "house",
+                "specific": "Harry's room"
+            },
+            "locationtype": "INT",
+            "range": [
+                240,
+                240
+            ],
+            "reason": "Harry is in his room at night after Uncle Vernon's visit."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "car",
+                "specific": "inside"
+            },
+            "locationtype": "INT",
+            "range": [
+                256,
+                270
+            ],
+            "reason": "The family is in the car during the night while Uncle Vernon is driving to escape the letters."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "hotel",
+                "specific": "dining room"
+            },
+            "locationtype": "INT",
+            "range": [
+                260,
+                266
+            ],
+            "reason": "The family is having breakfast at the hotel, indicating it is daytime."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "shack",
+                "specific": "inside"
+            },
+            "locationtype": "INT",
+            "range": [
+                278,
+                282
+            ],
+            "reason": "The scene takes place inside a shack during a storm at night."
+        }
+    ],
+    [
+        {
+            "time": "night",
+            "location": {
+                "general": "house",
+                "specific": "hut"
+            },
+            "locationtype": "INT",
+            "range": [
+                287,
+                412
+            ],
+            "reason": "The setting is a hut, indicated by the dialogue and actions within the text. The atmosphere suggests it is night as there is a storm outside, and characters are interacting indoors."
+        }
+    ],
+    [
+        {
+            "time": "night",
+            "location": {
+                "general": "house",
+                "specific": "cupboard"
+            },
+            "locationtype": "INT",
+            "range": [
+                414,
+                416
+            ],
+            "reason": "The scene begins at night as Harry is in his cupboard, and a dream about Hagrid is referenced. The time is confirmed to be nighttime when Harry wakes up."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "house",
+                "specific": "hut"
+            },
+            "locationtype": "INT",
+            "range": [
+                417,
+                446
+            ],
+            "reason": "Harry wakes up in a hut filled with sunlight, indicating it's daytime. The transition to day occurs when they interact in the hut after Harry wakes up."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "sea",
+                "specific": "rocky shore"
+            },
+            "locationtype": "EXT",
+            "range": [
+                445,
+                456
+            ],
+            "reason": "After leaving the hut, Hagrid and Harry go out to a rocky shore where they interact with the boat and discuss its origins, indicating it's still daytime."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "town",
+                "specific": "train station"
+            },
+            "locationtype": "EXT",
+            "range": [
+                460,
+                460
+            ],
+            "reason": "They arrive at the train station where a train to London is departing in five minutes, confirming it's still the daytime."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "town",
+                "specific": "street"
+            },
+            "locationtype": "EXT",
+            "range": [
+                491,
+                492
+            ],
+            "reason": "After arriving in London, they reach the Leaky Cauldron which is described as a tiny pub, and there is no indication of change in the time."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "alley",
+                "specific": "Diagon Alley"
+            },
+            "locationtype": "EXT",
+            "range": [
+                524,
+                526
+            ],
+            "reason": "As they enter Diagon Alley, there is mention of the sun shining brightly outside, confirming they are still in the daytime as they look around in amazement."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "bank",
+                "specific": "Gringotts"
+            },
+            "locationtype": "INT",
+            "range": [
+                530,
+                566
+            ],
+            "reason": "They enter Gringotts bank during daylight as they interact with goblins and discuss the vaults."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "shop",
+                "specific": "Ollivanders"
+            },
+            "locationtype": "INT",
+            "range": [
+                611,
+                640
+            ],
+            "reason": "Inside Ollivanders, Harry interacts with the wand maker during the day while purchasing his wand, and they leave as it is still daylight."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "station",
+                "specific": "Paddington Station"
+            },
+            "locationtype": "EXT",
+            "range": [
+                646,
+                655
+            ],
+            "reason": "The scene concludes in Paddington Station where Harry and Hagrid leave to catch a train, indicating it is still daytime before Harry departs."
+        }
+    ],
+    [
+        {
+            "time": "day",
+            "location": {
+                "general": "train station",
+                "specific": "platform nine and three-quarters"
+            },
+            "locationtype": "EXT",
+            "range": [
+                656,
+                705
+            ],
+            "reason": "The text describes Harry arriving at King's Cross station during the day, leading up to his successful crossing to platform nine and three-quarters."
+        },
+        {
+            "time": "morning",
+            "location": {
+                "general": "house",
+                "specific": "Dursleys' living room"
+            },
+            "locationtype": "INT",
+            "range": [
+                657,
+                676
+            ],
+            "reason": "Harry is speaking to his aunt and uncle in their living room, which suggests it is morning before they leave for the station."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "train",
+                "specific": "Hogwarts Express"
+            },
+            "locationtype": "INT",
+            "range": [
+                884,
+                893
+            ],
+            "reason": "The train arrives at Hogwarts as dusk turns to night, indicated by the description of the dark platform and the cold night air."
+        }
+    ],
+    [
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "entrance hall"
+            },
+            "locationtype": "INT",
+            "range": [
+                898,
+                902
+            ],
+            "reason": "The scene takes place at night as indicated by the overall context of the Sorting Ceremony, and the entrance hall of Hogwarts is described with stone walls lit by torches."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "chamber off the hall"
+            },
+            "locationtype": "INT",
+            "range": [
+                903,
+                908
+            ],
+            "reason": "This segment occurs in an empty chamber within the castle as the first years gather before the Sorting Ceremony. The atmosphere continues to suggest it is still night."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "Great Hall"
+            },
+            "locationtype": "INT",
+            "range": [
+                919,
+                1006
+            ],
+            "reason": "The Great Hall is depicted as the venue for the Sorting Ceremony, where the students are led into the main event. The description of the floating candles and the vastness of the hall indicates it is still night."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "Gryffindor common room"
+            },
+            "locationtype": "INT",
+            "range": [
+                1041,
+                1044
+            ],
+            "reason": "The Gryffindor common room scene shows the first years settling in after the ceremony, wrapping up the evening as they go to bed, confirming it is late at night."
+        }
+    ],
+    [
+        {
+            "time": "day",
+            "location": {
+                "general": "castle",
+                "specific": "corridors"
+            },
+            "locationtype": "INT",
+            "range": [
+                1046,
+                1055
+            ],
+            "reason": "The scene starts with Harry waking up the next day and continues as he navigates through the corridors of Hogwarts during the day."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "castle",
+                "specific": "classrooms"
+            },
+            "locationtype": "INT",
+            "range": [
+                1056,
+                1066
+            ],
+            "reason": "The sequence covers Harry's experiences in various classes, indicating he is in the indoor classrooms during daylight hours."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "castle",
+                "specific": "Great Hall"
+            },
+            "locationtype": "INT",
+            "range": [
+                1066,
+                1070
+            ],
+            "reason": "This scene takes place in the Great Hall during breakfast, confirming it is still day time."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "castle",
+                "specific": "dungeons"
+            },
+            "locationtype": "INT",
+            "range": [
+                1077,
+                1100
+            ],
+            "reason": "Harry attends his Potions class which takes place in the dungeons of the castle, still during the day."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "castle",
+                "specific": "grounds"
+            },
+            "locationtype": "EXT",
+            "range": [
+                1101,
+                1102
+            ],
+            "reason": "As Harry and Ron leave the castle to meet Hagrid, they step outside to the grounds, indicating it's still daytime."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "house",
+                "specific": "Hagrid's hut"
+            },
+            "locationtype": "INT",
+            "range": [
+                1103,
+                1116
+            ],
+            "reason": "The setting transitions to Hagrid's hut where Harry and Ron have tea, confirming it remains daytime."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "house",
+                "specific": "Hagrid's hut"
+            },
+            "locationtype": "INT",
+            "range": [
+                1117,
+                1120
+            ],
+            "reason": "The scene continues in Hagrid's hut where they discuss the Gringotts break-in and remains clearly a daytime setting."
+        }
+    ],
+    [
+        {
+            "time": "evening",
+            "location": {
+                "general": "castle",
+                "specific": "Gryffindor common room"
+            },
+            "locationtype": "INT",
+            "range": [
+                1123,
+                1125
+            ],
+            "reason": "The characters are discussing dinner plans while walking back to the castle, indicating it is evening."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "castle",
+                "specific": "grounds"
+            },
+            "locationtype": "EXT",
+            "range": [
+                1137,
+                1150
+            ],
+            "reason": "The scene takes place during a flying lesson on a clear, breezy day, as stated in the text."
+        },
+        {
+            "time": "evening",
+            "location": {
+                "general": "castle",
+                "specific": "Gryffindor common room"
+            },
+            "locationtype": "INT",
+            "range": [
+                1195,
+                1202
+            ],
+            "reason": "It is dinner time and the characters are seated in the hall dining area when discussing events that transpired earlier in the day."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "corridors"
+            },
+            "locationtype": "INT",
+            "range": [
+                1215,
+                1278
+            ],
+            "reason": "The characters are sneaking around the castle at night after dinner, showing it is late."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "forbidden corridor"
+            },
+            "locationtype": "INT",
+            "range": [
+                1273,
+                1280
+            ],
+            "reason": "They encounter a dangerous creature in a forbidden area, suggesting the setting is still nighttime."
+        }
+    ],
+    [
+        {
+            "time": "day",
+            "location": {
+                "general": "castle",
+                "specific": "Great Hall"
+            },
+            "locationtype": "INT",
+            "range": [
+                1289,
+                1295
+            ],
+            "reason": "The conversation about Hogwarts and the package occurs in the Great Hall during the day."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "Quidditch field"
+            },
+            "locationtype": "EXT",
+            "range": [
+                1297,
+                1346
+            ],
+            "reason": "The events here occur at night starting from when Oliver Wood meets Harry on the Quidditch field for training."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "castle",
+                "specific": "Charms classroom"
+            },
+            "locationtype": "INT",
+            "range": [
+                1348,
+                1356
+            ],
+            "reason": "The Charms class is taking place in the castle during the day, specifically Halloween morning."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "girls' bathroom"
+            },
+            "locationtype": "INT",
+            "range": [
+                1364,
+                1414
+            ],
+            "reason": "The encounter with the troll happens at night in the girls' bathroom, indicated by the chaos that ensues and the later appearance of Professor McGonagall and Snape."
+        }
+    ],
+    [
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "Gryffindor common room"
+            },
+            "locationtype": "INT",
+            "range": [
+                1426,
+                1436
+            ],
+            "reason": "The scene is set in the Gryffindor common room where Harry, Ron, and Hermione are discussing Quidditch and doing homework, which indicates an indoor setting during the evening."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "castle",
+                "specific": "courtyard"
+            },
+            "locationtype": "EXT",
+            "range": [
+                1431,
+                1431
+            ],
+            "reason": "This moment indicates they are outdoors as they are in the courtyard during break, which starts with the event of Hermione conjuring a fire."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "castle",
+                "specific": "staffroom"
+            },
+            "locationtype": "INT",
+            "range": [
+                1440,
+                1440
+            ],
+            "reason": "Harry enters the staffroom to find Snape and Filch, indicating a transition back inside the castle."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "Gryffindor common room"
+            },
+            "locationtype": "INT",
+            "range": [
+                1447,
+                1454
+            ],
+            "reason": "This segment returns to the Gryffindor common room where Harry, Ron, and Hermione are talking about Harry's nerves the night before the Quidditch match."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "castle",
+                "specific": "Great Hall"
+            },
+            "locationtype": "INT",
+            "range": [
+                1453,
+                1453
+            ],
+            "reason": "The description indicates they are inside the Great Hall, eating breakfast before the Quidditch match, marking a time transition."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "field",
+                "specific": "Quidditch pitch"
+            },
+            "locationtype": "EXT",
+            "range": [
+                1460,
+                1510
+            ],
+            "reason": "The action shifts outdoors to the Quidditch pitch where the match is taking place with a crowd watching from the stands."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "castle",
+                "specific": "Hagrid's hut"
+            },
+            "locationtype": "INT",
+            "range": [
+                1527,
+                1544
+            ],
+            "reason": "The final events occur back inside Hagrid's hut after the match, marking the final scene's place change and the beginning of discussions about Snape."
+        }
+    ],
+    [
+        {
+            "time": "day",
+            "location": {
+                "general": "castle",
+                "specific": "Hogwarts"
+            },
+            "locationtype": "INT",
+            "range": [
+                1546,
+                1546
+            ],
+            "reason": "This describes Hagrid looking furious with himself, indicating a moment early in the narrative, within the castle."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "castle",
+                "specific": "Great Hall"
+            },
+            "locationtype": "INT",
+            "range": [
+                1562,
+                1562
+            ],
+            "reason": "The conversation about Christmas and the decorations indicates it is daytime, specifically in the Great Hall where festive activities are taking place."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "dormitory"
+            },
+            "locationtype": "INT",
+            "range": [
+                1589,
+                1607
+            ],
+            "reason": "This segment describes Harry waking up on Christmas morning, located in the dormitory where it is nighttime transitioning into daylight as he discovers his presents."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "castle",
+                "specific": "Great Hall"
+            },
+            "locationtype": "INT",
+            "range": [
+                1629,
+                1629
+            ],
+            "reason": "This section depicts the grand celebration of Christmas dinner in the Great Hall, indicating it is daytime during the festivities."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "corridor"
+            },
+            "locationtype": "INT",
+            "range": [
+                1641,
+                1690
+            ],
+            "reason": "Harry sneaks through the castle at night to use the invisibility cloak, indicating a nighttime setting in enclosed spaces."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "unused classroom"
+            },
+            "locationtype": "INT",
+            "range": [
+                1651,
+                1653
+            ],
+            "reason": "Harry hides in a seemingly unused classroom, characterized by the description of desks and a mirror that convey a nighttime atmosphere."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "mirror room"
+            },
+            "locationtype": "INT",
+            "range": [
+                1702,
+                1721
+            ],
+            "reason": "The presence of Dumbledore and the discussions about the Mirror of Erised marks a consequential nighttime setting where Harry reflects on key desires."
+        }
+    ],
+    [
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "bedroom"
+            },
+            "locationtype": "INT",
+            "range": [
+                1722,
+                1724
+            ],
+            "reason": "The action starts with Harry in bed, indicating it's nighttime, and then transitions into discussions with Ron and Hermione, still within the castle."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "castle",
+                "specific": "common room"
+            },
+            "locationtype": "INT",
+            "range": [
+                1733,
+                1740
+            ],
+            "reason": "This segment is during the day as Harry discusses Quidditch and his worries in the Gryffindor common room."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "locker room"
+            },
+            "locationtype": "INT",
+            "range": [
+                1772,
+                1796
+            ],
+            "reason": "The events leading up to and during the Quidditch match take place in the evening, and the locker room setting is a clear indication of that."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "field"
+            },
+            "locationtype": "EXT",
+            "range": [
+                1797,
+                1800
+            ],
+            "reason": "This part captures the excitement right after the Quidditch match, clearly indicating it’s night as the events unfold in an outdoor location."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "forest"
+            },
+            "locationtype": "EXT",
+            "range": [
+                1803,
+                1824
+            ],
+            "reason": "This narrative extends into the Forbidden Forest, which occurs at night, where Harry follows Snape and overhears the conversation."
+        }
+    ],
+    [
+        {
+            "time": "day",
+            "location": {
+                "general": "castle",
+                "specific": "library"
+            },
+            "locationtype": "INT",
+            "range": [
+                1825,
+                1832
+            ],
+            "reason": "The discussion takes place during the day as the text references studying, homework, and specific details about the surroundings of the library."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "castle",
+                "specific": "Hagrid's hut"
+            },
+            "locationtype": "INT",
+            "range": [
+                1849,
+                1890
+            ],
+            "reason": "The characters visit Hagrid's hut and engage in conversations, and it's mentioned that the curtains are closed, indicating an indoor setting during the day."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "Hagrid's hut"
+            },
+            "locationtype": "INT",
+            "range": [
+                1903,
+                1912
+            ],
+            "reason": "The events take place at midnight and the description references them being in Hagrid's hut at night."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "tallest tower"
+            },
+            "locationtype": "INT",
+            "range": [
+                1928,
+                1942
+            ],
+            "reason": "The scene occurs at night as the characters navigate the castle with Norbert, and the mention of the tallest tower indicates that they are preparing to meet Charlie's friends."
+        }
+    ],
+    [
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "astronomy tower"
+            },
+            "locationtype": "INT",
+            "range": [
+                1944,
+                1950
+            ],
+            "reason": "The characters are discussing a situation that occurred in the astronomy tower, indicating they are inside the castle at night."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "Professor McGonagall's study"
+            },
+            "locationtype": "INT",
+            "range": [
+                1946,
+                1956
+            ],
+            "reason": "The characters are in McGonagall's study, which is part of the castle, and the events are unfolding at one o'clock in the morning."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "entrance hall"
+            },
+            "locationtype": "INT",
+            "range": [
+                1985,
+                1988
+            ],
+            "reason": "Filch meets the students in the entrance hall where they are about to receive their detention later that night."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "grounds",
+                "specific": "the forest"
+            },
+            "locationtype": "EXT",
+            "range": [
+                1987,
+                2090
+            ],
+            "reason": "The characters are led outside into the dark grounds and specifically into the Forbidden Forest for their detention."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "forest",
+                "specific": "clearing"
+            },
+            "locationtype": "EXT",
+            "range": [
+                2053,
+                2058
+            ],
+            "reason": "The characters arrive at a clearing in the forest where they find the dead unicorn, noting the dark exterior surroundings."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "house",
+                "specific": "common room"
+            },
+            "locationtype": "INT",
+            "range": [
+                2093,
+                2094
+            ],
+            "reason": "After returning from the forest, Harry wakes Ron in the dark common room to discuss what happened."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "house",
+                "specific": "bedroom"
+            },
+            "locationtype": "INT",
+            "range": [
+                2097,
+                2098
+            ],
+            "reason": "The characters are in their respective bedrooms preparing to sleep, suggesting a transition to rest after the night's events."
+        }
+    ],
+    [
+        {
+            "time": "day",
+            "location": {
+                "general": "castle",
+                "specific": "classroom"
+            },
+            "locationtype": "INT",
+            "range": [
+                2100,
+                2102
+            ],
+            "reason": "The scene takes place in a large classroom where students are taking written exams. It indicates a daytime setting as the exams are conducted during the day."
+        },
+        {
+            "time": "day",
+            "location": {
+                "general": "castle",
+                "specific": "grounds"
+            },
+            "locationtype": "EXT",
+            "range": [
+                2105,
+                2106
+            ],
+            "reason": "After the exams, they join the crowds outside onto the sunny grounds, which suggests it is still daytime."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "common room"
+            },
+            "locationtype": "INT",
+            "range": [
+                2184,
+                2186
+            ],
+            "reason": "The characters are in the common room in the evening hours as they sit nervously apart after dinner, indicating that it is nighttime."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "staircase"
+            },
+            "locationtype": "INT",
+            "range": [
+                2211,
+                2219
+            ],
+            "reason": "Harry, Ron, and Hermione are sneaking through the castle after hours, suggesting it is nighttime when they are trying to avoid being caught."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "trapdoor"
+            },
+            "locationtype": "INT",
+            "range": [
+                2231,
+                2231
+            ],
+            "reason": "The characters are at the trapdoor leading to the chamber below, which they have decided to enter at night, indicating urgent action."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "chamber beneath the trapdoor"
+            },
+            "locationtype": "INT",
+            "range": [
+                2241,
+                2249
+            ],
+            "reason": "Harry, Ron, and Hermione fall down into a chamber that is described as dark and is clearly located beneath the castle, and this occurs at night."
+        },
+        {
+            "time": "night",
+            "location": {
+                "general": "castle",
+                "specific": "final chamber"
+            },
+            "locationtype": "INT",
+            "range": [
+                2326,
+                2326
+            ],
+            "reason": "They reach the last chamber where they discover the troll and other challenges, further confirming their situation in the castle at night."
+        }
+    ]
+]

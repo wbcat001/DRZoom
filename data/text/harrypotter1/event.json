@@ -1,0 +1,1696 @@
+[
+    [
+        {
+            "name": "Introduction of the Dursleys",
+            "summary": "Mr. and Mrs. Dursley are established as a perfectly normal, non-magical family living at number four Privet Drive. Their disdain for the peculiar hints at a larger story involving the world of magic.",
+            "range": [
+                1,
+                3
+            ],
+            "role": "Setup",
+            "importance": 6
+        },
+        {
+            "name": "Mr. Dursley's Routine",
+            "summary": "Mr. Dursley goes through his normal morning routine without realizing that unusual events are unfolding around him, like the sighting of a large owl during the day.",
+            "range": [
+                4,
+                8
+            ],
+            "role": "Setup",
+            "importance": 5
+        },
+        {
+            "name": "Meeting the Cat Reading a Map",
+            "summary": "Mr. Dursley sees a cat seemingly reading a map, which unnerves him. This moment introduces the magical elements before the reader fully experiences the magical world.",
+            "range": [
+                7,
+                7
+            ],
+            "role": "Inciting Incident",
+            "importance": 5
+        },
+        {
+            "name": "Whispers about the Potters",
+            "summary": "Mr. Dursley overhears people in cloaks mentioning the Potters and their son, Harry, which triggers his fear and paranoia about his connection to them.",
+            "range": [
+                10,
+                12
+            ],
+            "role": "Inciting Incident",
+            "importance": 7
+        },
+        {
+            "name": "Dursley News Report",
+            "summary": "The evening news reports unusual events occurring, such as owls flying during the day and sightings of shooting stars, confirming that something extraordinary is happening.",
+            "range": [
+                18,
+                20
+            ],
+            "role": "Turning Point",
+            "importance": 6
+        },
+        {
+            "name": "Dursleys' Dinner Conversation",
+            "summary": "Mr. Dursley nervously brings up the Potters during dinner with Mrs. Dursley, highlighting the tension and fear surrounding their family’s secret.",
+            "range": [
+                21,
+                25
+            ],
+            "role": "Rising Action",
+            "importance": 5
+        },
+        {
+            "name": "Arrival of Dumbledore and McGonagall",
+            "summary": "Dumbledore and Professor McGonagall meet outside of Privet Drive, discussing the recent events surrounding Voldemort and Harry Potter, bringing the magical world to the forefront.",
+            "range": [
+                35,
+                39
+            ],
+            "role": "Climax",
+            "importance": 7
+        },
+        {
+            "name": "Revelation of the Potters' Fate",
+            "summary": "Professor McGonagall reveals that Lily and James Potter have been killed and that their son, Harry, is somehow connected to Voldemort's downfall, heightening the stakes.",
+            "range": [
+                56,
+                58
+            ],
+            "role": "Turning Point",
+            "importance": 7
+        },
+        {
+            "name": "Hagrid Brings Harry",
+            "summary": "Hagrid arrives with baby Harry Potter on a motorcycle, solidifying Harry's significance and foreshadowing his important role in the magical world.",
+            "range": [
+                73,
+                78
+            ],
+            "role": "Resolution",
+            "importance": 7
+        },
+        {
+            "name": "Leaving Harry at the Dursleys'",
+            "summary": "Dumbledore leaves Harry at the Dursleys' doorstep with a letter, marking the beginning of Harry's life with his relatives and the continuation of the magical tale.",
+            "range": [
+                84,
+                92
+            ],
+            "role": "Resolution",
+            "importance": 7
+        }
+    ],
+    [
+        {
+            "name": "Harry sleeps at Privet Drive",
+            "summary": "The story opens with Harry Potter sleeping in his cramped room at the Dursleys' house on Privet Drive, unaware of his special status as 'the boy who lived.'",
+            "range": [
+                93,
+                93
+            ],
+            "role": "Setup",
+            "importance": 6
+        },
+        {
+            "name": "Aunt Petunia wakes Harry",
+            "summary": "Harry is abruptly awakened by Aunt Petunia, who insists on him getting up to prepare for Dudley's birthday celebrations.",
+            "range": [
+                95,
+                102
+            ],
+            "role": "Setup",
+            "importance": 5
+        },
+        {
+            "name": "Dudley's birthday preparations",
+            "summary": "Harry witnesses the Dursleys preparing for Dudley's birthday, highlighting the stark contrast in treatment between him and Dudley.",
+            "range": [
+                106,
+                124
+            ],
+            "role": "Setup",
+            "importance": 7
+        },
+        {
+            "name": "Harry's hopeful suggestion",
+            "summary": "When Mrs. Figg is unable to watch Harry on Dudley's birthday, Harry expresses his desire to be left at home, revealing his longing for freedom.",
+            "range": [
+                125,
+                130
+            ],
+            "role": "Inciting Incident",
+            "importance": 5
+        },
+        {
+            "name": "Dursleys decide to take Harry to the zoo",
+            "summary": "After much debate about what to do with him, the Dursleys reluctantly decide to take Harry to the zoo, an outing that fills him with excitement.",
+            "range": [
+                134,
+                140
+            ],
+            "role": "Turning Point",
+            "importance": 6
+        },
+        {
+            "name": "Harry communicates with the snake",
+            "summary": "At the zoo, Harry shares a moment with a boa constrictor, communicating in a way that surprises him, hinting at his unique abilities.",
+            "range": [
+                158,
+                169
+            ],
+            "role": "Climax",
+            "importance": 7
+        },
+        {
+            "name": "The glass vanishes",
+            "summary": "In an unexpected twist, the glass of the snake's enclosure disappears, causing chaos at the zoo and showcasing Harry's latent magic for the first time.",
+            "range": [
+                172,
+                176
+            ],
+            "role": "Climax",
+            "importance": 7
+        },
+        {
+            "name": "Harry faces Uncle Vernon's anger",
+            "summary": "After the incident at the zoo, Harry is punished by Uncle Vernon, emphasizing the Dursleys' harsh treatment and increasing Harry's sense of isolation.",
+            "range": [
+                177,
+                180
+            ],
+            "role": "Resolution",
+            "importance": 6
+        }
+    ],
+    [
+        {
+            "name": "Harry's solitary school experience",
+            "summary": "Harry reflects on his time at school where he had no friends and was constantly bullied by Dudley's gang, emphasizing his isolation and the sense of impending change as he anticipates starting secondary school.",
+            "range": [
+                180,
+                182
+            ],
+            "role": "Setup",
+            "importance": 6
+        },
+        {
+            "name": "Dudley's new uniform",
+            "summary": "Dudley shows off his new Smeltings uniform, and the Dursleys celebrate this moment. Harry internally struggles with feeling out of place and unimportant in contrast to Dudley's attention.",
+            "range": [
+                186,
+                187
+            ],
+            "role": "Setup",
+            "importance": 5
+        },
+        {
+            "name": "Letter arrival",
+            "summary": "Harry finds a mysterious letter addressed to him for the first time in his life, sparking intrigue and showing that there may be more to his identity than he has realized.",
+            "range": [
+                198,
+                204
+            ],
+            "role": "Inciting Incident",
+            "importance": 7
+        },
+        {
+            "name": "Uncle Vernon reacts to the letter",
+            "summary": "Uncle Vernon becomes increasingly agitated after reading Harry's letter and quickly becomes secretive, showcasing his fear of Harry's true nature and setting the stage for conflict.",
+            "range": [
+                211,
+                216
+            ],
+            "role": "Turning Point",
+            "importance": 6
+        },
+        {
+            "name": "Uncle Vernon's desperate attempts to escape the letters",
+            "summary": "Uncle Vernon goes to extreme lengths to prevent Harry from receiving any more letters, boarding up mail slots and attempting to hide from the outside world.",
+            "range": [
+                245,
+                250
+            ],
+            "role": "Turning Point",
+            "importance": 6
+        },
+        {
+            "name": "Dursleys' escape to the shack",
+            "summary": "After receiving an overwhelming number of letters, the Dursleys flee to a remote shack in the middle of a storm, showcasing their desperation and determination to keep Harry from whatever is trying to reach him.",
+            "range": [
+                256,
+                275
+            ],
+            "role": "Climax",
+            "importance": 7
+        },
+        {
+            "name": "Harry's eleventh birthday",
+            "summary": "As Harry turns eleven, he reflects on the Dursleys' neglect and the anticipation of his letter, thus bridging his past life of misery with the unknown future that his birthday may bring.",
+            "range": [
+                271,
+                286
+            ],
+            "role": "Climax",
+            "importance": 7
+        }
+    ],
+    [
+        {
+            "name": "A Knock at the Door",
+            "summary": "Harry hears a knock on the door, which causes him to sit upright in alarm. Uncle Vernon rushes in with a rifle, showing the tension before the door is smashed down.",
+            "range": [
+                287,
+                292
+            ],
+            "role": "Inciting Incident",
+            "importance": 7
+        },
+        {
+            "name": "Introduction of Hagrid",
+            "summary": "A giant man, Rubeus Hagrid, enters the hut after breaking down the door. He immediately asserts his presence and begins to speak to Harry, marking a significant turn in the story.",
+            "range": [
+                293,
+                309
+            ],
+            "role": "Turning Point",
+            "importance": 7
+        },
+        {
+            "name": "Hagrid's Birthday Gift",
+            "summary": "Hagrid presents Harry with a birthday cake and begins to explain his family background, revealing Harry's connection to the wizarding world.",
+            "range": [
+                305,
+                306
+            ],
+            "role": "Setup",
+            "importance": 6
+        },
+        {
+            "name": "Revelation of Harry's History",
+            "summary": "Hagrid reveals to Harry that he is a wizard and that his parents were famous in the wizarding world. This revelation is emotionally charged and sets the stage for Harry's future.",
+            "range": [
+                340,
+                345
+            ],
+            "role": "Climax",
+            "importance": 7
+        },
+        {
+            "name": "Uncle Vernon's Denial",
+            "summary": "Uncle Vernon tries to deny Harry's identity and declares that his magic should be suppressed, showing the Dursleys' opposition to the wizarding world.",
+            "range": [
+                386,
+                401
+            ],
+            "role": "Conflict",
+            "importance": 5
+        },
+        {
+            "name": "Dudley's Transformation",
+            "summary": "In an act of frustration, Hagrid accidentally casts a transformation spell on Dudley, turning him into a pig, which serves as a humorous yet serious signal of Hagrid's magical abilities.",
+            "range": [
+                404,
+                407
+            ],
+            "role": "Turning Point",
+            "importance": 6
+        },
+        {
+            "name": "Hagrid's Past and Warning",
+            "summary": "Hagrid discloses that he was expelled from Hogwarts for using magic, hinting at his complicated history and unresolved issues with the magical law.",
+            "range": [
+                411,
+                412
+            ],
+            "role": "Setup",
+            "importance": 5
+        }
+    ],
+    [
+        {
+            "name": "Hagrid wakes Harry",
+            "summary": "Harry wakes up in a hut after a strange dream about a giant named Hagrid. Realizing the dream is real, he is filled with happiness as he sees Hagrid sleeping on the sofa.",
+            "range": [
+                415,
+                422
+            ],
+            "role": "Setup",
+            "importance": 6
+        },
+        {
+            "name": "Hagrid informs Harry about his money",
+            "summary": "Hagrid explains to Harry that he has sufficient money left by his parents for his schooling, which shocks Harry as he believed he had nothing.",
+            "range": [
+                434,
+                436
+            ],
+            "role": "Inciting Incident",
+            "importance": 7
+        },
+        {
+            "name": "Hagrid takes Harry to Gringotts",
+            "summary": "Hagrid takes Harry to Gringotts, the wizarding bank, emphasizing its security and the danger of robbing it due to goblin guards and enchantments.",
+            "range": [
+                442,
+                450
+            ],
+            "role": "Turning Point",
+            "importance": 7
+        },
+        {
+            "name": "Harry visits Diagon Alley",
+            "summary": "Hagrid leads Harry through the secret entrance to Diagon Alley, where Harry is overwhelmed by the sights, shops, and his growing realization of his wizarding heritage.",
+            "range": [
+                524,
+                526
+            ],
+            "role": "Setup",
+            "importance": 6
+        },
+        {
+            "name": "Harry enters Gringotts",
+            "summary": "At Gringotts, Harry witnesses the goblins working as he retrieves his wealth, marking a significant shift in his understanding of his identity and past.",
+            "range": [
+                539,
+                551
+            ],
+            "role": "Climax",
+            "importance": 7
+        },
+        {
+            "name": "Purchase of Hogwarts supplies",
+            "summary": "Hagrid helps Harry buy his school supplies, including robes and books, and introduces him to various aspects of the wizarding world.",
+            "range": [
+                564,
+                602
+            ],
+            "role": "Resolution",
+            "importance": 6
+        },
+        {
+            "name": "Harry's wand selection",
+            "summary": "Harry visits Ollivanders, where he experiences the unique process of wand selection, culminating in his connection with a powerful wand that recognizes him.",
+            "range": [
+                611,
+                645
+            ],
+            "role": "Climax",
+            "importance": 7
+        },
+        {
+            "name": "Final preparations and Harry's reflection",
+            "summary": "As Harry boards the train after an impactful day, he reflects on his newfound fame and uncertain future in the wizarding world, sharing a moment with Hagrid who reassures him.",
+            "range": [
+                646,
+                654
+            ],
+            "role": "Resolution",
+            "importance": 6
+        }
+    ],
+    [
+        {
+            "name": "Harry leaves the Dursleys",
+            "summary": "The train departs, and Harry attempts to watch Hagrid until he disappears from sight, signifying his departure from the Dursleys and the beginning of his journey to Hogwarts.",
+            "range": [
+                656,
+                656
+            ],
+            "role": "Setup",
+            "importance": 5
+        },
+        {
+            "name": "Harry's last month with the Dursleys",
+            "summary": "Harry experiences a dull and isolating month with the Dursleys; they avoid him completely, but he finds solace in his new owl, Hedwig, and his studies.",
+            "range": [
+                657,
+                657
+            ],
+            "role": "Setup",
+            "importance": 6
+        },
+        {
+            "name": "Harry asks the Dursleys for a ride to King's Cross",
+            "summary": "On the last day of August, Harry approaches the Dursleys to request a ride to King's Cross station, revealing the tension in their relationship.",
+            "range": [
+                658,
+                676
+            ],
+            "role": "Inciting Incident",
+            "importance": 5
+        },
+        {
+            "name": "Harry arrives at King's Cross",
+            "summary": "Harry, confused and anxious, arrives at King's Cross only to find that platform nine and three-quarters is not visible, leading to his first major challenge in the wizarding world.",
+            "range": [
+                678,
+                681
+            ],
+            "role": "Turning Point",
+            "importance": 7
+        },
+        {
+            "name": "Harry discovers how to access Platform 9¾",
+            "summary": "With help from a kind family, Harry learns that he needs to run straight at the barrier between platforms nine and ten to reach the wizarding platform.",
+            "range": [
+                685,
+                702
+            ],
+            "role": "Turning Point",
+            "importance": 6
+        },
+        {
+            "name": "Harry boards the Hogwarts Express",
+            "summary": "Harry successfully runs through the barrier and boards the Hogwarts Express, marking his official entry into the wizarding world.",
+            "range": [
+                705,
+                706
+            ],
+            "role": "Climax",
+            "importance": 7
+        },
+        {
+            "name": "Harry meets Ron Weasley",
+            "summary": "Harry meets Ron Weasley on the train, and they begin to form a friendship while discussing their family backgrounds and experiences.",
+            "range": [
+                764,
+                786
+            ],
+            "role": "Setup",
+            "importance": 6
+        },
+        {
+            "name": "Harry's first encounter with Draco Malfoy",
+            "summary": "Draco Malfoy confronts Harry on the train, introducing a rival dynamic and underscoring the theme of social class differences in the wizarding world.",
+            "range": [
+                862,
+                873
+            ],
+            "role": "Turning Point",
+            "importance": 6
+        },
+        {
+            "name": "Harry and Ron defend Scabbers",
+            "summary": "In the wake of Malfoy's taunts, Ron's pet rat Scabbers bites Goyle, highlighting the protective bond forming between Harry and Ron.",
+            "range": [
+                874,
+                878
+            ],
+            "role": "Climax",
+            "importance": 5
+        },
+        {
+            "name": "Hagrid greets the first years",
+            "summary": "Upon arriving at Hogwarts, Hagrid calls for the first years, indicating the transition from the train to the magical school where their adventures will unfold.",
+            "range": [
+                888,
+                890
+            ],
+            "role": "Resolution",
+            "importance": 4
+        },
+        {
+            "name": "First view of Hogwarts Castle",
+            "summary": "As the first years sail across the lake, they get their first glimpse of Hogwarts Castle, symbolizing a new beginning for Harry and his friends.",
+            "range": [
+                891,
+                892
+            ],
+            "role": "Climax",
+            "importance": 7
+        }
+    ],
+    [
+        {
+            "name": "Hagrid knocks on the castle door",
+            "summary": "Hagrid arrives at the entrance of Hogwarts and knocks three times on the castle door, signaling the start of the first-year students' journey.",
+            "range": [
+                898,
+                898
+            ],
+            "role": "Setup",
+            "importance": 5
+        },
+        {
+            "name": "Professor McGonagall welcomes the first years",
+            "summary": "Professor McGonagall greets Hagrid and the new students, indicating her role as their guide into Hogwarts and emphasizing the importance of the upcoming Sorting Ceremony.",
+            "range": [
+                899,
+                901
+            ],
+            "role": "Setup",
+            "importance": 6
+        },
+        {
+            "name": "Introduction to Hogwarts' impressive hall",
+            "summary": "As they enter the enormous entrance hall, the first years are introduced to the magnificent architecture of Hogwarts, setting the atmosphere for their new adventure.",
+            "range": [
+                902,
+                903
+            ],
+            "role": "Setup",
+            "importance": 5
+        },
+        {
+            "name": "Professor McGonagall explains the Sorting Ceremony",
+            "summary": "Professor McGonagall explains to the first years about the significance of the Sorting Ceremony and introduces the four Hogwarts houses: Gryffindor, Hufflepuff, Ravenclaw, and Slytherin.",
+            "range": [
+                904,
+                906
+            ],
+            "role": "Setup",
+            "importance": 6
+        },
+        {
+            "name": "First years wait nervously for sorting",
+            "summary": "As the first years wait for the Sorting Ceremony, they express their anxieties about the process, which deepens Harry's feelings of nervousness and sets up character dynamics among them.",
+            "range": [
+                907,
+                910
+            ],
+            "role": "Inciting Incident",
+            "importance": 7
+        },
+        {
+            "name": "The appearance of the ghosts",
+            "summary": "The first years are startled by the arrival of ghosts who float through the wall, lightening the mood and introducing the whimsical nature of Hogwarts.",
+            "range": [
+                911,
+                919
+            ],
+            "role": "Inciting Incident",
+            "importance": 4
+        },
+        {
+            "name": "The Sorting Hat's song",
+            "summary": "The Sorting Hat sings a humorous and informative song that introduces the four houses and hints at the qualities that each house values, preparing the students for their fate.",
+            "range": [
+                922,
+                948
+            ],
+            "role": "Turning Point",
+            "importance": 7
+        },
+        {
+            "name": "Harry's Sorting",
+            "summary": "Harry Potter is selected for Gryffindor after a moment of internal conflict with the Sorting Hat regarding Slytherin, marking a pivotal moment in his identity formation.",
+            "range": [
+                968,
+                975
+            ],
+            "role": "Climax",
+            "importance": 8
+        },
+        {
+            "name": "Welcome feast introduction",
+            "summary": "After the sorting, Dumbledore welcomes the students to a new year at Hogwarts, introducing the festive atmosphere of the welcome feast and showcasing the magical food.",
+            "range": [
+                979,
+                984
+            ],
+            "role": "Resolution",
+            "importance": 6
+        },
+        {
+            "name": "Discussion of family backgrounds",
+            "summary": "As the feast continues, the first years share stories of their magical backgrounds, cultivating camaraderie and deepening character relationships among the new Gryffindors.",
+            "range": [
+                992,
+                996
+            ],
+            "role": "Resolution",
+            "importance": 5
+        },
+        {
+            "name": "The arrival of the desserts",
+            "summary": "Desserts magically appear, reinforcing the notion of abundance and celebration at Hogwarts, highlighting the contrast between Harry's past with the Dursleys and his new life.",
+            "range": [
+                991,
+                991
+            ],
+            "role": "Resolution",
+            "importance": 6
+        },
+        {
+            "name": "Dumbledore's announcements",
+            "summary": "Dumbledore makes several important announcements about school rules and upcoming events, emphasizing the sense of tradition and governance within Hogwarts.",
+            "range": [
+                1007,
+                1012
+            ],
+            "role": "Setup",
+            "importance": 4
+        },
+        {
+            "name": "The school song",
+            "summary": "The students sing the school song, showcasing the quirky traditions of Hogwarts and solidifying the communal aspect of the school environment.",
+            "range": [
+                1015,
+                1028
+            ],
+            "role": "Resolution",
+            "importance": 5
+        },
+        {
+            "name": "Encounter with Peeves",
+            "summary": "Percy Weasley warns the first years about Peeves, the mischievous poltergeist, introducing them to the lively and sometimes chaotic nature of Hogwarts.",
+            "range": [
+                1032,
+                1039
+            ],
+            "role": "Inciting Incident",
+            "importance": 4
+        },
+        {
+            "name": "Arrival at the Gryffindor common room",
+            "summary": "The first years finally reach the Gryffindor common room, a place of comfort and community where they will begin to form their identities as Gryffindors.",
+            "range": [
+                1041,
+                1042
+            ],
+            "role": "Resolution",
+            "importance": 6
+        },
+        {
+            "name": "Harry's strange dream",
+            "summary": "Harry experiences a vivid dream about being drawn toward Slytherin, foreshadowing future conflicts and highlighting his internal struggles with identity and destiny.",
+            "range": [
+                1045,
+                1045
+            ],
+            "role": "Climax",
+            "importance": 7
+        }
+    ],
+    [
+        {
+            "name": "Harry wakes up without remembering his dream",
+            "summary": "Harry rolls over and falls asleep again after a strange dream. He wakes up the next day with no recollection of it, which emphasizes the mysterious elements of his environment.",
+            "range": [
+                1046,
+                1046
+            ],
+            "role": "Setup",
+            "importance": 3
+        },
+        {
+            "name": "Whispers about Harry",
+            "summary": "As Harry leaves his dormitory, he overhears whispers about himself from classmates, indicating his newfound fame and setting the tone for how others perceive him at Hogwarts.",
+            "range": [
+                1053,
+                1055
+            ],
+            "role": "Setup",
+            "importance": 5
+        },
+        {
+            "name": "Harry struggles to navigate Hogwarts",
+            "summary": "Harry's difficulties in finding his way through Hogwarts with its moving staircases and changing doors highlight the complexity of the magical school and his new life.",
+            "range": [
+                1054,
+                1054
+            ],
+            "role": "Setup",
+            "importance": 4
+        },
+        {
+            "name": "Encounter with Peeves and Filch",
+            "summary": "During his first morning, Harry and Ron have an unsettling encounter with Peeves the Poltergeist and get in trouble with Filch, the caretaker, showcasing the chaotic nature of Hogwarts.",
+            "range": [
+                1055,
+                1056
+            ],
+            "role": "Inciting Incident",
+            "importance": 6
+        },
+        {
+            "name": "Introduction to Hogwarts classes",
+            "summary": "Harry learns about the variety of magical classes he will be taking, each presenting new challenges and knowledge he must acquire.",
+            "range": [
+                1058,
+                1058
+            ],
+            "role": "Setup",
+            "importance": 4
+        },
+        {
+            "name": "First Potions lesson with Snape",
+            "summary": "Harry's first Potions class reveals Professor Snape's disdain for him and the challenges he faces in the class, marking an important and troubling moment for Harry.",
+            "range": [
+                1077,
+                1100
+            ],
+            "role": "Turning Point",
+            "importance": 7
+        },
+        {
+            "name": "Hagrid invites Harry for tea",
+            "summary": "Hagrid sends Harry a note inviting him for tea to discuss Harry's first week at Hogwarts, which provides a moment of comfort amid Harry's struggles.",
+            "range": [
+                1071,
+                1075
+            ],
+            "role": "Setup",
+            "importance": 5
+        },
+        {
+            "name": "Harry's visit to Hagrid's house",
+            "summary": "Harry and Ron visit Hagrid's home, where they bond over rock cakes and discuss their experiences, presenting a more friendly and supportive aspect of the magical world.",
+            "range": [
+                1102,
+                1112
+            ],
+            "role": "Resolution",
+            "importance": 6
+        },
+        {
+            "name": "Discovery of the Gringotts break-in news",
+            "summary": "Harry finds a newspaper clipping about the Gringotts break-in that coincided with his birthday, leading to suspicions and questions about his connection to the wider wizarding world.",
+            "range": [
+                1117,
+                1122
+            ],
+            "role": "Inciting Incident",
+            "importance": 6
+        }
+    ],
+    [
+        {
+            "name": "Harry's thoughts about Hagrid and Snape",
+            "summary": "As Harry and Ron walk back to the castle, Harry reflects on his tea with Hagrid and wonders about the package and Snape's secretive behavior.",
+            "range": [
+                1123,
+                1123
+            ],
+            "role": "Setup",
+            "importance": 5
+        },
+        {
+            "name": "Introduction of Draco Malfoy",
+            "summary": "Harry meets Draco Malfoy in Potions class, realizing he may hate him more than Dudley. This sets up a rivalry between the two characters.",
+            "range": [
+                1124,
+                1124
+            ],
+            "role": "Inciting Incident",
+            "importance": 6
+        },
+        {
+            "name": "Flying lessons announcement",
+            "summary": "The Gryffindors discover they will have flying lessons with Slytherin, which raises Harry's anxiety about flying in front of Malfoy.",
+            "range": [
+                1125,
+                1125
+            ],
+            "role": "Setup",
+            "importance": 5
+        },
+        {
+            "name": "Preparation for flying lessons",
+            "summary": "The students gather for their first flying lesson, with Hermione trying to prepare them with flying tips, highlighting different attitudes towards Quidditch.",
+            "range": [
+                1127,
+                1129
+            ],
+            "role": "Setup",
+            "importance": 5
+        },
+        {
+            "name": "Neville receives the Remembrall",
+            "summary": "Neville receives a Remembrall from his grandmother, which indicates something he has forgotten, adding tension to the group dynamics.",
+            "range": [
+                1131,
+                1132
+            ],
+            "role": "Setup",
+            "importance": 4
+        },
+        {
+            "name": "Malfoy steals the Remembrall",
+            "summary": "Malfoy snatches Neville's Remembrall, prompting Harry and Ron to react and setting the scene for a confrontation.",
+            "range": [
+                1133,
+                1133
+            ],
+            "role": "Inciting Incident",
+            "importance": 6
+        },
+        {
+            "name": "Flying lesson chaos",
+            "summary": "During the flying lesson, Neville accidentally flies high and falls off his broom, leading to his injury and taking Madam Hooch away from the rest of the class.",
+            "range": [
+                1137,
+                1150
+            ],
+            "role": "Turning Point",
+            "importance": 7
+        },
+        {
+            "name": "Harry's first flight",
+            "summary": "Ignoring Madam Hooch's instructions, Harry takes off on his broom to retrieve the Remembrall from Malfoy, discovering his natural talent for flying.",
+            "range": [
+                1156,
+                1165
+            ],
+            "role": "Climax",
+            "importance": 7
+        },
+        {
+            "name": "Professor McGonagall's intervention",
+            "summary": "Professor McGonagall finds Harry after his flight and instead of expelling him, introduces him to Oliver Wood for a role on the Quidditch team.",
+            "range": [
+                1166,
+                1189
+            ],
+            "role": "Resolution",
+            "importance": 6
+        },
+        {
+            "name": "The wizard duel challenge",
+            "summary": "Malfoy challenges Harry to a wizard's duel, escalating their rivalry and marking a pivotal moment for Harry and his friends.",
+            "range": [
+                1202,
+                1206
+            ],
+            "role": "Inciting Incident",
+            "importance": 5
+        },
+        {
+            "name": "Midnight adventure",
+            "summary": "Harry, Ron, and Hermione venture out at night for the duel, leading them to unexpected trouble and the discovery of a dangerous creature.",
+            "range": [
+                1215,
+                1278
+            ],
+            "role": "Turning Point",
+            "importance": 7
+        },
+        {
+            "name": "Encounter with the three-headed dog",
+            "summary": "The group accidentally enters a forbidden corridor and encounters a three-headed dog, heightening the tension and peril of their adventure.",
+            "range": [
+                1273,
+                1277
+            ],
+            "role": "Climax",
+            "importance": 7
+        },
+        {
+            "name": "Escape from danger",
+            "summary": "The group narrowly escapes Filch and the three-headed dog, cementing their bond and escalating the sense of danger at Hogwarts.",
+            "range": [
+                1278,
+                1283
+            ],
+            "role": "Resolution",
+            "importance": 6
+        },
+        {
+            "name": "Reflection on the monster's purpose",
+            "summary": "Hermione speculates that the three-headed dog is guarding something valuable under the trapdoor, hinting at deeper mysteries in Hogwarts.",
+            "range": [
+                1284,
+                1285
+            ],
+            "role": "Setup",
+            "importance": 5
+        }
+    ],
+    [
+        {
+            "name": "Harry learns about the mysterious package",
+            "summary": "Harry and Ron discuss the strange two-inch-long package that has been moved from Gringotts to Hogwarts, realizing it must be either very valuable or dangerous.",
+            "range": [
+                1289,
+                1291
+            ],
+            "role": "Setup",
+            "importance": 5
+        },
+        {
+            "name": "Harry receives the Nimbus Two Thousand",
+            "summary": "Harry receives a package containing a Nimbus Two Thousand broomstick and a note from Professor McGonagall instructing him not to open it at the table, marking an important milestone in Harry's Quidditch journey.",
+            "range": [
+                1294,
+                1297
+            ],
+            "role": "Inciting Incident",
+            "importance": 7
+        },
+        {
+            "name": "Malfoy attempts to taunt Harry",
+            "summary": "Malfoy seizes the opportunity to mock Harry and Ron about the broomstick, but Harry and Ron take joy in Malfoy's jealousy as they learn more about Quidditch.",
+            "range": [
+                1301,
+                1308
+            ],
+            "role": "Setup",
+            "importance": 4
+        },
+        {
+            "name": "Harry's first Quidditch practice",
+            "summary": "As Harry joins Oliver Wood for his first Quidditch training session, he learns the rules of the game and showcases his natural talent for flying.",
+            "range": [
+                1320,
+                1346
+            ],
+            "role": "Turning Point",
+            "importance": 6
+        },
+        {
+            "name": "Hermione's emotional turmoil",
+            "summary": "Hermione refuses to speak to Harry and Ron after they receive the broomstick, leading to tension within their friendship as she becomes upset.",
+            "range": [
+                1310,
+                1360
+            ],
+            "role": "Setup",
+            "importance": 3
+        },
+        {
+            "name": "The troll invades the castle",
+            "summary": "During the Halloween feast, Professor Quirrell suddenly announces there is a troll in the dungeons, causing panic among the students and faculty.",
+            "range": [
+                1361,
+                1362
+            ],
+            "role": "Inciting Incident",
+            "importance": 6
+        },
+        {
+            "name": "Harry and Ron go to rescue Hermione",
+            "summary": "Realizing that Hermione is unaware of the troll's presence, Harry and Ron sneak off to find her, demonstrating their growing friendship and loyalty.",
+            "range": [
+                1366,
+                1384
+            ],
+            "role": "Turning Point",
+            "importance": 5
+        },
+        {
+            "name": "The confrontation with the troll",
+            "summary": "Harry and Ron confront the troll to save Hermione, showcasing both bravery and accidental cleverness in their chaotic battle against the creature.",
+            "range": [
+                1385,
+                1414
+            ],
+            "role": "Climax",
+            "importance": 7
+        },
+        {
+            "name": "The aftermath and gaining points for Gryffindor",
+            "summary": "After successfully subduing the troll, McGonagall arrives and awards Harry and Ron points for their bravery while reprimanding Hermione for her earlier actions.",
+            "range": [
+                1417,
+                1425
+            ],
+            "role": "Resolution",
+            "importance": 6
+        }
+    ],
+    [
+        {
+            "name": "Hermione becomes friends with Harry and Ron",
+            "summary": "Following their encounter with a mountain troll, Hermione Granger solidifies her friendship with Harry and Ron, illustrating the bond formed through shared experiences.",
+            "range": [
+                1426,
+                1426
+            ],
+            "role": "Setup",
+            "importance": 6
+        },
+        {
+            "name": "Harry prepares for his first Quidditch match",
+            "summary": "As the Quidditch season begins, Harry looks forward to his first match as Seeker for Gryffindor against Slytherin, raising the stakes in the house championship.",
+            "range": [
+                1428,
+                1428
+            ],
+            "role": "Setup",
+            "importance": 5
+        },
+        {
+            "name": "Harry learns about Quidditch rules and history",
+            "summary": "With Hermione's help, Harry delves into 'Quidditch Through the Ages', gaining vital knowledge about the game and its dangers, preparing him for the upcoming match.",
+            "range": [
+                1430,
+                1430
+            ],
+            "role": "Setup",
+            "importance": 5
+        },
+        {
+            "name": "Harry witnesses Snape's injury",
+            "summary": "While searching for his book, Harry accidentally discovers Snape with a severely injured leg, hinting at potential dark activities and foreshadowing future conflicts.",
+            "range": [
+                1440,
+                1441
+            ],
+            "role": "Inciting Incident",
+            "importance": 6
+        },
+        {
+            "name": "Quidditch match day",
+            "summary": "The day of the Quidditch match arrives, filled with excitement and tension. Harry feels nervous about playing as Seeker amid the anticipation of his peers.",
+            "range": [
+                1453,
+                1454
+            ],
+            "role": "Setup",
+            "importance": 5
+        },
+        {
+            "name": "The Quidditch match begins",
+            "summary": "The Gryffindor team takes to the field for the match against Slytherin, with Harry experiencing the thrill of competition as he climbs onto his Nimbus Two Thousand.",
+            "range": [
+                1462,
+                1471
+            ],
+            "role": "Turning Point",
+            "importance": 7
+        },
+        {
+            "name": "Harry's broom goes out of control",
+            "summary": "During the match, Harry's Nimbus Two Thousand begins to behave erratically, creating a dangerous situation that captures the crowd's attention and concern.",
+            "range": [
+                1505,
+                1509
+            ],
+            "role": "Climax",
+            "importance": 7
+        },
+        {
+            "name": "Hermione sabotages Snape",
+            "summary": "As Harry struggles to regain control of his broom, Hermione realizes that Snape is jinxing it and takes action by setting his robes on fire, allowing Harry to regain control.",
+            "range": [
+                1522,
+                1522
+            ],
+            "role": "Resolution",
+            "importance": 7
+        },
+        {
+            "name": "Harry catches the Golden Snitch",
+            "summary": "In a moment of triumph, Harry manages to catch the Golden Snitch after regaining control of his broom, leading Gryffindor to victory against Slytherin.",
+            "range": [
+                1525,
+                1526
+            ],
+            "role": "Resolution",
+            "importance": 7
+        },
+        {
+            "name": "Hagrid reveals information about Fluffy",
+            "summary": "After the match, Hagrid inadvertently reveals that the three-headed dog, Fluffy, is his and that Dumbledore has tasked it with guarding something, adding mystery to the story.",
+            "range": [
+                1531,
+                1537
+            ],
+            "role": "Setup for Future Conflict",
+            "importance": 6
+        }
+    ],
+    [
+        {
+            "name": "Hagrid's frustration",
+            "summary": "Hagrid appears furious with himself, indicating a troubling event or realization that has affected him emotionally.",
+            "range": [
+                1546,
+                1546
+            ],
+            "role": "Setup",
+            "importance": 4
+        },
+        {
+            "name": "Arrival of Christmas at Hogwarts",
+            "summary": "Hogwarts is blanketed in snow as Christmas approaches, leading to numerous activities and mischief among the students, including the Weasley twins bewitching snowballs.",
+            "range": [
+                1547,
+                1547
+            ],
+            "role": "Setup",
+            "importance": 6
+        },
+        {
+            "name": "Malfoy taunts Harry",
+            "summary": "In Potions class, Draco Malfoy mocks Harry for not having a proper family to go home to for Christmas, leading to increasing tensions between them.",
+            "range": [
+                1549,
+                1551
+            ],
+            "role": "Inciting Incident",
+            "importance": 5
+        },
+        {
+            "name": "Harry decides to stay at Hogwarts for Christmas",
+            "summary": "Harry chooses to remain at Hogwarts during the holidays, which he anticipates will be his best Christmas yet, indicating his growing bond with his friends.",
+            "range": [
+                1550,
+                1550
+            ],
+            "role": "Setup",
+            "importance": 6
+        },
+        {
+            "name": "Ron and Hermione's library search",
+            "summary": "Intrigued by Hagrid's mention of Nicolas Flamel, Harry, Ron, and Hermione begin researching in the library to uncover important information, raising the stakes of their quest.",
+            "range": [
+                1571,
+                1576
+            ],
+            "role": "Inciting Incident",
+            "importance": 5
+        },
+        {
+            "name": "Christmas Day gifts",
+            "summary": "On Christmas morning, Harry opens several gifts, including a hand-knitted sweater from Mrs. Weasley and an invisibility cloak, symbolizing his belonging and the warmth of friendships.",
+            "range": [
+                1589,
+                1611
+            ],
+            "role": "Turning Point",
+            "importance": 7
+        },
+        {
+            "name": "Harry discovers the Mirror of Erised",
+            "summary": "Hiding from Filch, Harry encounters the Mirror of Erised, which reflects his deepest desire - his family. This moment leads to profound emotional reflection for Harry.",
+            "range": [
+                1653,
+                1662
+            ],
+            "role": "Climax",
+            "importance": 7
+        },
+        {
+            "name": "Dumbledore's warning",
+            "summary": "Dumbledore finds Harry at the mirror and explains its true nature, warning him about the dangers of obsession with desires. This advice marks a pivotal moment for Harry's understanding of reality and his future choices.",
+            "range": [
+                1703,
+                1718
+            ],
+            "role": "Resolution",
+            "importance": 6
+        },
+        {
+            "name": "Dumbledore's personal wish",
+            "summary": "In a surprising moment, Dumbledore reveals that when he looks in the mirror, he sees himself with warm socks, emphasizing the theme of humility and the triviality of material desires.",
+            "range": [
+                1720,
+                1721
+            ],
+            "role": "Resolution",
+            "importance": 5
+        }
+    ],
+    [
+        {
+            "name": "Harry doubts Dumbledore's truthfulness",
+            "summary": "After returning to his bed, Harry begins to suspect that Dumbledore might not have been entirely honest with him about certain matters, particularly about Nicolas Flamel.",
+            "range": [
+                1722,
+                1722
+            ],
+            "role": "Setup",
+            "importance": 6
+        },
+        {
+            "name": "Harry's nightmares begin",
+            "summary": "Haunted by his memories of the Mirror of Erised, Harry starts to have recurring nightmares about his parents' death, indicating the mental toll that the mirror's vision has taken on him.",
+            "range": [
+                1723,
+                1724
+            ],
+            "role": "Setup",
+            "importance": 5
+        },
+        {
+            "name": "Quidditch practice intensifies",
+            "summary": "With the resumption of term after Christmas, Harry returns to Quidditch practice, where he finds that the training sessions are becoming more intense under Wood's leadership, even amidst the poor weather.",
+            "range": [
+                1725,
+                1725
+            ],
+            "role": "Setup",
+            "importance": 6
+        },
+        {
+            "name": "Revelation of Snape as Quidditch referee",
+            "summary": "During a practice session, Wood announces that Snape will be refereeing the upcoming Quidditch match, raising concerns about fairness and Harry's safety, especially given Snape's attitude towards him.",
+            "range": [
+                1726,
+                1731
+            ],
+            "role": "Inciting Incident",
+            "importance": 7
+        },
+        {
+            "name": "Neville falls victim to Malfoy's curse",
+            "summary": "Neville arrives at the common room cursed by Malfoy, leading to a discussion about standing up to bullies and the implications for Gryffindor's reputation.",
+            "range": [
+                1740,
+                1746
+            ],
+            "role": "Turning Point",
+            "importance": 6
+        },
+        {
+            "name": "Discovery of Nicolas Flamel",
+            "summary": "In a moment of excitement, Harry discovers Nicolas Flamel's name in a Wizard card, leading to a realization about the Sorcerer's Stone and its connection to Dumbledore.",
+            "range": [
+                1751,
+                1758
+            ],
+            "role": "Turning Point",
+            "importance": 7
+        },
+        {
+            "name": "Hermione identifies the Sorcerer's Stone",
+            "summary": "Hermione reveals that Nicolas Flamel is the only known maker of the Sorcerer's Stone, which has powerful abilities like transforming metal into gold and granting immortality.",
+            "range": [
+                1760,
+                1763
+            ],
+            "role": "Climax",
+            "importance": 7
+        },
+        {
+            "name": "Harry decides to play in the Quidditch match",
+            "summary": "Despite his fears about Snape, Harry resolves to play in the upcoming Quidditch match to prove his courage and not appear frightened to his peers.",
+            "range": [
+                1767,
+                1770
+            ],
+            "role": "Setup",
+            "importance": 5
+        },
+        {
+            "name": "Quidditch match results",
+            "summary": "During the tense Quidditch match, Harry manages to catch the Snitch incredibly quickly, leading Gryffindor to victory and alleviating some tensions surrounding Snape and the House championship.",
+            "range": [
+                1794,
+                1796
+            ],
+            "role": "Resolution",
+            "importance": 7
+        },
+        {
+            "name": "Harry witnesses Snape's suspicious meeting",
+            "summary": "After the match, Harry sees Snape hastily enter the forbidden forest, prompting him to follow and uncover a secret meeting with Quirrell regarding the Sorcerer's Stone.",
+            "range": [
+                1802,
+                1818
+            ],
+            "role": "Inciting Incident",
+            "importance": 6
+        },
+        {
+            "name": "Harry confides in Ron and Hermione",
+            "summary": "Harry shares what he witnessed between Snape and Quirrell, leading to an understanding of the threat posed by Snape and the need to protect the Sorcerer's Stone.",
+            "range": [
+                1821,
+                1824
+            ],
+            "role": "Climax",
+            "importance": 7
+        }
+    ],
+    [
+        {
+            "name": "Quirrell's Decreasing Health",
+            "summary": "Quirrell appears to be getting increasingly pale and thin, indicating that something is affecting him, potentially hinting at his connection to Voldemort.",
+            "range": [
+                1826,
+                1826
+            ],
+            "role": "Setup",
+            "importance": 5
+        },
+        {
+            "name": "Fluffy's Growling",
+            "summary": "Harry, Ron, and Hermione continue to check on Fluffy, the three-headed dog, reinforcing the idea that the Sorcerer's Stone is still well-guarded and safe under the watch of multiple characters.",
+            "range": [
+                1827,
+                1827
+            ],
+            "role": "Setup",
+            "importance": 6
+        },
+        {
+            "name": "Hermione's Study Schedules",
+            "summary": "Hermione becomes increasingly focused on their studies, which adds tension to the trio's interactions and emphasizes the importance of passing their exams.",
+            "range": [
+                1828,
+                1830
+            ],
+            "role": "Setup",
+            "importance": 4
+        },
+        {
+            "name": "Hagrid's Shifting Interests",
+            "summary": "Hagrid is spotted in the library, hiding something, which raises suspicion among Harry, Ron, and Hermione regarding his activities.",
+            "range": [
+                1833,
+                1834
+            ],
+            "role": "Inciting Incident",
+            "importance": 5
+        },
+        {
+            "name": "Hagrid Reveals Dragon Interest",
+            "summary": "After some prodding, Hagrid reveals he is interested in dragons, connecting to the subplot of illegal dragon breeding and escalating the tension around potential dangers.",
+            "range": [
+                1844,
+                1844
+            ],
+            "role": "Inciting Incident",
+            "importance": 5
+        },
+        {
+            "name": "Baby Dragon Hatching",
+            "summary": "Hagrid's dragon egg hatches, revealing a Norwegian Ridgeback, marking a critical turning point in their adventure as they must now deal with the ramifications of Hagrid's secret.",
+            "range": [
+                1881,
+                1881
+            ],
+            "role": "Turning Point",
+            "importance": 7
+        },
+        {
+            "name": "Norbert, the Dragon's Growth",
+            "summary": "As Norbert grows rapidly, the danger of Hagrid's illegal pet becomes more pressing, urging Harry and his friends to consider how to deal with the situation.",
+            "range": [
+                1890,
+                1893
+            ],
+            "role": "Turning Point",
+            "importance": 6
+        },
+        {
+            "name": "Planning to Send Norbert Away",
+            "summary": "Harry, Ron, and Hermione devise a plan to send Norbert to Ron's brother Charlie in Romania, showing their willingness to act to protect both Hagrid and the dragon.",
+            "range": [
+                1900,
+                1903
+            ],
+            "role": "Turning Point",
+            "importance": 6
+        },
+        {
+            "name": "Malfoy's Encounter with Ron",
+            "summary": "Malfoy overhears Ron's predicament, creating an additional layer of tension as he threatens to expose Ron's secret regarding Norbert.",
+            "range": [
+                1918,
+                1922
+            ],
+            "role": "Climax",
+            "importance": 6
+        },
+        {
+            "name": "Successful Handover of Norbert",
+            "summary": "Harry and Hermione successfully hand over Norbert to Charlie's friends, signifying relief from the pressures of keeping the dragon secret and removing the immediate danger.",
+            "range": [
+                1940,
+                1942
+            ],
+            "role": "Resolution",
+            "importance": 7
+        },
+        {
+            "name": "Filch's Sudden Appearance",
+            "summary": "As they celebrate their success, Filch catches Harry and Hermione, foreshadowing potential consequences and complications that may arise in the future.",
+            "range": [
+                1943,
+                1943
+            ],
+            "role": "Climax",
+            "importance": 6
+        }
+    ],
+    [
+        {
+            "name": "Harry realizes they left the invisibility cloak behind",
+            "summary": "Harry and his friends acknowledge the gravity of their situation after forgetting their invisibility cloak on top of the tower, putting them in danger of being caught out of bed and in trouble with Professor McGonagall.",
+            "range": [
+                1944,
+                1946
+            ],
+            "role": "Inciting Incident",
+            "importance": 7
+        },
+        {
+            "name": "Professor McGonagall catches Harry and friends",
+            "summary": "Professor McGonagall finds Harry, Hermione, and Neville and is furious about their nighttime escapade, leading to detention and a significant loss of house points for Gryffindor, which could jeopardize their chances to win the house cup.",
+            "range": [
+                1947,
+                1957
+            ],
+            "role": "Turning Point",
+            "importance": 7
+        },
+        {
+            "name": "Gryffindors react to the lost points",
+            "summary": "The next day, Harry faces the backlash from the Gryffindor house after their lost points, feeling the heavy weight of disappointment and isolation as he becomes the most hated student, even being insulted by others.",
+            "range": [
+                1958,
+                1960
+            ],
+            "role": "Climax",
+            "importance": 6
+        },
+        {
+            "name": "Harry overhears Quirrell",
+            "summary": "While walking back from the library, Harry overhears Professor Quirrell appearing distressed, hinting at a deeper threat potentially linked to Snape and the Sorcerer's Stone.",
+            "range": [
+                1968,
+                1972
+            ],
+            "role": "Setup",
+            "importance": 5
+        },
+        {
+            "name": "Detention in the Forbidden Forest",
+            "summary": "Harry, Hermione, Neville, and Malfoy are taken into the Forbidden Forest as part of their detention, where they encounter potentially dangerous situations, indicating the gravity of their earlier misdeeds.",
+            "range": [
+                1985,
+                2002
+            ],
+            "role": "Turning Point",
+            "importance": 6
+        },
+        {
+            "name": "Unicorn blood and the cloaked figure",
+            "summary": "While in the woods, Harry witnesses the aftermath of a unicorn being killed by a hooded figure, which causes him immense pain and fear, revealing a significant danger that is closely tied to his destiny.",
+            "range": [
+                2057,
+                2061
+            ],
+            "role": "Climax",
+            "importance": 7
+        },
+        {
+            "name": "Firenze rescues Harry",
+            "summary": "A centaur named Firenze saves Harry from danger, revealing crucial information about the unicorn's death and hinting at Voldemort's return, deepening the connection between Harry and the dark forces at play.",
+            "range": [
+                2064,
+                2092
+            ],
+            "role": "Resolution",
+            "importance": 7
+        }
+    ],
+    [
+        {
+            "name": "Harry struggles with exam stress",
+            "summary": "Harry reflects on the anxiety of taking his exams, worried that Voldemort might appear at any moment. Meanwhile, his friends Ron and Hermione are focused on studying and exams.",
+            "range": [
+                2100,
+                2103
+            ],
+            "role": "Setup",
+            "importance": 5
+        },
+        {
+            "name": "Harry's scar causes concern",
+            "summary": "Harry experiences pain in his forehead scar, which he believes to be a warning of impending danger, indicating a deeper connection to Voldemort.",
+            "range": [
+                2108,
+                2110
+            ],
+            "role": "Inciting Incident",
+            "importance": 6
+        },
+        {
+            "name": "Harry suspects Hagrid's dragon dealer",
+            "summary": "After speaking with Hagrid about the dragon egg, Harry realizes the connection between the stranger who gave Hagrid the egg and Voldemort, leading him to believe that danger is closer than they thought.",
+            "range": [
+                2117,
+                2128
+            ],
+            "role": "Turning Point",
+            "importance": 7
+        },
+        {
+            "name": "Harry and friends plan to meet Dumbledore",
+            "summary": "Harry insists on going to Dumbledore to warn him about the potential theft of the Sorcerer's Stone and reveals his suspicions that Snape or Voldemort could be behind it.",
+            "range": [
+                2132,
+                2148
+            ],
+            "role": "Climax",
+            "importance": 7
+        },
+        {
+            "name": "Professor McGonagall informs them Dumbledore is gone",
+            "summary": "McGonagall's revelation that Dumbledore has left for London creates a sense of urgency for Harry, who fears they must act quickly to protect the Stone.",
+            "range": [
+                2140,
+                2148
+            ],
+            "role": "Turning Point",
+            "importance": 6
+        },
+        {
+            "name": "Harry decides to go for the Stone",
+            "summary": "Determined to prevent Snape from obtaining the Stone, Harry resolves to venture through the trapdoor, despite the dangers of expulsion.",
+            "range": [
+                2174,
+                2180
+            ],
+            "role": "Climax",
+            "importance": 7
+        },
+        {
+            "name": "Encounter with Devil's Snare",
+            "summary": "After falling through the trapdoor, Harry and his friends are ensnared by the Devil's Snare plant, which requires Hermione to remember how to defeat it.",
+            "range": [
+                2250,
+                2260
+            ],
+            "role": "Turning Point",
+            "importance": 6
+        },
+        {
+            "name": "Chess game obstacle",
+            "summary": "The trio faces a life-sized chess game, where they must play the game in order to move forward, showcasing their teamwork and Ron's strategic thinking.",
+            "range": [
+                2284,
+                2300
+            ],
+            "role": "Climax",
+            "importance": 7
+        },
+        {
+            "name": "Pathway forward blocked by potions",
+            "summary": "The group reaches a chamber filled with potions and a riddle that reveals which potion allows them to move forward and which will send them back.",
+            "range": [
+                2322,
+                2340
+            ],
+            "role": "Turning Point",
+            "importance": 6
+        },
+        {
+            "name": "Hermione sacrifices herself to help Harry",
+            "summary": "Hermione drinks the potion that allows her to return safely while Harry prepares to confront the final challenge alone, showing their bond and trust.",
+            "range": [
+                2363,
+                2365
+            ],
+            "role": "Resolution",
+            "importance": 7
+        }
+    ],
+    [
+        {
+            "name": "Harry encounters Quirrell",
+            "summary": "Harry discovers that Professor Quirrell is behind the plot to access the Sorcerer's Stone, instead of Snape or Voldemort as he previously believed.",
+            "range": [
+                2368,
+                2372
+            ],
+            "role": "Turning Point",
+            "importance": 7
+        },
+        {
+            "name": "Quirrell reveals his true intentions",
+            "summary": "Quirrell explains that he tried to kill Harry at the Quidditch match and that Snape was actually trying to save him, revealing the intricate plot against Harry.",
+            "range": [
+                2373,
+                2377
+            ],
+            "role": "Inciting Incident",
+            "importance": 6
+        },
+        {
+            "name": "Quirrell binds Harry with ropes",
+            "summary": "Quirrell captures Harry using magic as he begins to carry out his plan to find the Sorcerer's Stone.",
+            "range": [
+                2378,
+                2379
+            ],
+            "role": "Climax",
+            "importance": 5
+        },
+        {
+            "name": "Harry realizes the mirror's significance",
+            "summary": "Harry discovers the Mirror of Erised is key to finding the Sorcerer's Stone, and he strategizes to prevent Quirrell from focusing on it.",
+            "range": [
+                2383,
+                2390
+            ],
+            "role": "Setup",
+            "importance": 5
+        },
+        {
+            "name": "Voldemort's presence is revealed",
+            "summary": "Quirrell unveils that Voldemort is living on the back of his head, explaining how he has been manipulating him.",
+            "range": [
+                2421,
+                2425
+            ],
+            "role": "Turning Point",
+            "importance": 7
+        },
+        {
+            "name": "Harry learns about his mother's love",
+            "summary": "Dumbledore explains that the reason Quirrell cannot touch Harry is due to the protection left by his mother's sacrifice.",
+            "range": [
+                2468,
+                2472
+            ],
+            "role": "Resolution",
+            "importance": 6
+        },
+        {
+            "name": "The fate of the Sorcerer's Stone",
+            "summary": "Dumbledore reveals that the Stone has been destroyed to prevent it from being abused, and that Nicolas Flamel will die but has accepted this.",
+            "range": [
+                2455,
+                2458
+            ],
+            "role": "Resolution",
+            "importance": 6
+        },
+        {
+            "name": "The end-of-year feast",
+            "summary": "The Hogwarts house cup is awarded, and Harry, Ron, and Hermione celebrate their achievements and the events of the past year.",
+            "range": [
+                2517,
+                2534
+            ],
+            "role": "Resolution",
+            "importance": 7
+        },
+        {
+            "name": "Harry's summer plans",
+            "summary": "Harry expresses excitement for his summer with friends, foreshadowing fun ahead despite his unpleasant family.",
+            "range": [
+                2536,
+                2554
+            ],
+            "role": "Resolution",
+            "importance": 6
+        }
+    ]
+]

@@ -25,7 +25,7 @@ const App: React.FC = () => {
     const fetchInitialData = async () => {
         try {
             // resposne = requests.post("http://localhost:8000/pca/init",json={"options":"test"}) in python
-            const res = await fetch('http://localhost:8000/pca/init', {
+            const res = await fetch('http://localhost:8000/dimension_reduce/init', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -146,7 +146,7 @@ const App: React.FC = () => {
         //   filter: selectedIndexes,
         // });
         console.log('Selected Indexes:', selectedIndexes.length);
-        const res = await fetch('http://localhost:8000/pca/update', {
+        const res = await fetch('http://localhost:8000/dimension_reduce/update', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
