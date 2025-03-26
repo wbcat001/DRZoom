@@ -9,7 +9,7 @@ from typing import List
 from fastapi.middleware.cors import CORSMiddleware
 
 from handler.main_handler import MainHandler
-
+import time
 
 app = FastAPI()
 app.add_middleware(
@@ -37,7 +37,6 @@ async def dimension_reduce_init(init_request: InitRequest):
         global main_handler
         main_handler.reset()
         position_data = main_handler.get_initial_data()
-        print(position_data[:10])
 
         # 分散
         print(f"variance: {np.var(position_data)}")
@@ -53,14 +52,16 @@ async def dimension_reduce_init(init_request: InitRequest):
 async def dimension_reduce_update(request: DimmensionReduceRequest):
     print(request.filter[:10])
     try:
+        start = time.time()
         global main_handler
         position_data = main_handler.update(request.filter)
-        # print(f"position_data: {position_data[:10]}")
+        
         # 分散
         print(f"variance: {np.var(position_data)}")
 
         result = [{"index": i, "data": d} for i, d in zip(request.filter, position_data[0].tolist())]
-        print(f"result: {result[:10]}")
+
+        print(f"elapsed_time: {time.time() - start}")
 
         return {"data": result}
 

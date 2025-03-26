@@ -43,10 +43,13 @@ class DataHandler:
             with open(file_path, "rb") as f:
                 high_dim_data = np.array(pickle.load(f))
 
-            # high_dim_dataは(N, D)のndarray stride=1, window=50のwindowed_dataを作成 -> (N-50, D)を作って
+            # high_dim_dataN行D列の、埋め込みベクトルの時系列データです
+            # これをwindowで平均することで (N-window行)D列のデータに変換します
             window = 50
-            # windowed_data = np.array([high_dim_data[i:i+window] for i in range(len(high_dim_data)-window)]) これだと(752, 50, 768)になってしまう
-            windowed_data = np.array([high_dim_data[i:i+window].flatten() for i in range(len(high_dim_data)-window)])
+            
+            windowed_data = np.zeros((high_dim_data.shape[0] - window, high_dim_data.shape[1]))
+            for i in range(high_dim_data.shape[0] - window):
+                windowed_data[i] = np.mean(high_dim_data[i:i+window], axis=0)
             # print(f"high_dim_data: {high_dim_data.shape}")
 
 

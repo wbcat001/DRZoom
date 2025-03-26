@@ -21,7 +21,7 @@ from handler.align_handler import AlignmentHandler
 from handler.dimensional_reduce_handler import DimensionalReduceHandler
 from handler.filter_handler import FilterHandler
 from handler.data_handler import DataHandler
-
+import time
 
 class TransitionData:
     def __init__(self, position_data: PositionData, frame:int=1):
@@ -58,32 +58,39 @@ class VisualizeHandler:
         high_dim_data = self.data_handler.get_data().high_dim_data
         prev_position_data = self.transition_data.data_list# 一つ前のフレームのデータを取得
 
+        start = time.time()
         # ２つのリストから、共通のインデックスを作る
         prev_indecies = self.transition_data.indecies
         common_indecies = list(set(indexies) & set(prev_indecies))
+
+        print(f"indexeis time: {time.time() - start}")
 
         print(f"common_indecies: {len(common_indecies)}")   
         print(f"prev position data: {len(prev_position_data)}") 
         # インデックスに対応する位置を取得
 
-        
+        start = time.time()
 
         prev_filtered_position_data = self.filter_handler.filter_position_data(common_indecies, prev_position_data)
 
         # filter
         filtered_high_dim_data = self.filter_handler.filter_high_dim_data(common_indecies, high_dim_data)
 
+        print(f"filter time: {time.time() - start}")
         # reduce
+        start = time.time()
         reduced_data = self.reduce_handler.reduce(filtered_high_dim_data)
-
+        print(f"reduce time: {time.time() - start}")
         # align
+        start = time.time()
         aligned_data = self.align_handler.align(prev_filtered_position_data, reduced_data)
-
+        print(f"align time: {time.time() - start}")
         frame.append(aligned_data)
         # self.transition_data.update(frame, indexies)
 
+        start = time.time()
         self.transition_data.update(frame, indexies)
-
+        print(f"update time: {time.time() - start}")
         print(f"updated: len {len(aligned_data)}")
 
         return frame
