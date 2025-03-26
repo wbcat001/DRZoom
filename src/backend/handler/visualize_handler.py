@@ -24,12 +24,16 @@ from handler.data_handler import DataHandler
 
 
 class TransitionData:
-    def __init__(self, position_data: PositionData, frame:int=2):
-        self.data_list = [position_data for _ in range(frame)]
+    def __init__(self, position_data: PositionData, frame:int=1):
+        # position dataはすべての点のデータを保存するもの
+        self.data_list = position_data
         self.frame = frame
+        self.indecies = list(range(len(position_data)))
 
-    def update(self, data:List[HighDimensionalData]):
-        self.data_list = data
+    def update(self, data:List[HighDimensionalData], indecies: List[int]):
+   
+        self.data_list[indecies] = data[0]
+        self.indecies = indecies
 
 
 # 描画のための座標列を生成する
@@ -51,21 +55,34 @@ class VisualizeHandler:
     def update(self, indexies: List[int]):
         frame: List[PositionData] = []
 
+        high_dim_data = self.data_handler.get_data().high_dim_data
+        prev_position_data = self.transition_data.data_list# 一つ前のフレームのデータを取得
+
+        # ２つのリストから、共通のインデックスを作る
+        prev_indecies = self.transition_data.indecies
+        common_indecies = list(set(indexies) & set(prev_indecies))
+
+        print(f"common_indecies: {len(common_indecies)}")   
+        print(f"prev position data: {len(prev_position_data)}") 
+        # インデックスに対応する位置を取得
+
         
-        prev_high_dim_data = self.data_handler.get_data().high_dim_data
-        prev_position_data = self.transition_data.data_list[-1] # 一つ前のフレームのデータを取得
-        prev_filtered_position_data = self.filter_handler.filter_position_data(indexies, prev_position_data)
+
+        prev_filtered_position_data = self.filter_handler.filter_position_data(common_indecies, prev_position_data)
 
         # filter
-        filtered_data = self.filter_handler.filter_high_dim_data(indexies, prev_high_dim_data)
+        filtered_high_dim_data = self.filter_handler.filter_high_dim_data(common_indecies, high_dim_data)
 
         # reduce
-        reduced_data = self.reduce_handler.reduce(filtered_data)
+        reduced_data = self.reduce_handler.reduce(filtered_high_dim_data)
 
         # align
-        aligned_data = self.align_handler.align(reduced_data, prev_filtered_position_data)
+        aligned_data = self.align_handler.align(prev_filtered_position_data, reduced_data)
 
         frame.append(aligned_data)
+        # self.transition_data.update(frame, indexies)
+
+        self.transition_data.update(frame, indexies)
 
         print(f"updated: len {len(aligned_data)}")
 
@@ -81,23 +98,23 @@ if __name__ == "__main__":
     handler = VisualizeHandler(data_handler=data_handler, filter_handler=filter_handler, reduce_handler=reduce_handler, align_handler=align_handler)
     import numpy as np
     import time
-    
-
     start_time = time.time()
      # random 500 indexies
-    new_position_data = handler.update(np.random.choice(800, 500))
+    random_indexies = [np.random.choice(800, 500)]
+    print(len(random_indexies))
+    new_position_data = handler.update(random_indexies)
     print(f"time: {time.time() - start_time}")
 
-    import plotly.express as px
-    for i in range(10):
-        start_time = time.time()
-        new_position_data = handler.update(np.random.choice(800, 500))
-        print(f"time: {time.time() - start_time}")
+    # import plotly.express as px
+    # for i in range(10):
+    #     start_time = time.time()
+    #     new_position_data = handler.update(np.random.choice(800, 500))
+    #     print(f"time: {time.time() - start_time}")
 
-        print(f"shape{new_position_data[0].shape}")
-        # line plot
-        fig = px.line(x=new_position_data[0][:, 0], y=new_position_data[0][:, 1])
-        fig.show()
+    #     print(f"shape{new_position_data[0].shape}")
+    #     # line plot
+    #     fig = px.line(x=new_position_data[0][:, 0], y=new_position_data[0][:, 1])
+    #     fig.show()
 
     # print(f"new_position_data: {new_position_data}")
 

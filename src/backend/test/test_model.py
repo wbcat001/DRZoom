@@ -5,8 +5,6 @@ import unittest
 import numpy as np
 import pandas as pd
 class TestData(unittest.TestCase):
-    
-   
 
     def test_metadata(self):
         metadata = pd.DataFrame({

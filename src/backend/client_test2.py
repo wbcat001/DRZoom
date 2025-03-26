@@ -22,7 +22,8 @@ def test_dimension_reduce_init():
 def test_dimension_reduce_update():
     data = {"filter": [0, 1, 2, 3, 4]}
     response = requests.post(f"{BASE_URL}/update", json=data)
-    print("Dimension Reduce Update Response:", response)
+    
+    print("Dimension Reduce Update Response JSON:", response.json())
 """
 @app.get("/test")
 async def test():
@@ -35,6 +36,7 @@ async def test():
 def test_test():
     response = requests.get(f"{BASE_URL}/test")
     print("Test Response:", response.json())
+    
 
 # Run tests
 if __name__ == "__main__":

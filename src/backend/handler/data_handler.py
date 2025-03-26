@@ -42,6 +42,19 @@ class DataHandler:
         try:
             with open(file_path, "rb") as f:
                 high_dim_data = np.array(pickle.load(f))
+
+            # high_dim_dataは(N, D)のndarray stride=1, window=50のwindowed_dataを作成 -> (N-50, D)を作って
+            window = 50
+            # windowed_data = np.array([high_dim_data[i:i+window] for i in range(len(high_dim_data)-window)]) これだと(752, 50, 768)になってしまう
+            windowed_data = np.array([high_dim_data[i:i+window].flatten() for i in range(len(high_dim_data)-window)])
+            # print(f"high_dim_data: {high_dim_data.shape}")
+
+
+
+            print(f"windowed_data: {windowed_data.shape}")
+            return windowed_data
+            
+
             return high_dim_data
         except Exception as e:
             raise Exception(f"failed to load high dimensional data: {e}")

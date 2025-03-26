@@ -30,7 +30,3 @@ print(len(data_list_filtered))
 print(time.time() - start)
 
 
-# 1000行D列のndarrayの型を定義してください
-N: int = 1000
-D: int = 1000
-data_array = np.random.rand(N, D)

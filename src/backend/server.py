@@ -23,7 +23,7 @@ app.add_middleware(
 main_handler = MainHandler()
 print(main_handler.get_initial_data()[:10])
 print(main_handler.get_config())
-print(main_handler.update([1,2,3])[:10])
+# print(main_handler.update([1,2,3])[:10])
 
 class DimmensionReduceRequest(BaseModel):
     filter: List[int]
@@ -35,10 +35,14 @@ class InitRequest(BaseModel):
 async def dimension_reduce_init(init_request: InitRequest):
     try:
         global main_handler
+        main_handler.reset()
         position_data = main_handler.get_initial_data()
         print(position_data[:10])
 
-        data = [{"index": i, "data": d} for i, d in enumerate(position_data)]
+        # 分散
+        print(f"variance: {np.var(position_data)}")
+
+        data = [{"index": i, "data": d} for i, d in enumerate(position_data.tolist())]
         print(data[:10])
     except Exception as e:
         print(e)
@@ -47,15 +51,22 @@ async def dimension_reduce_init(init_request: InitRequest):
 
 @app.post("/update")
 async def dimension_reduce_update(request: DimmensionReduceRequest):
+    print(request.filter[:10])
     try:
         global main_handler
         position_data = main_handler.update(request.filter)
-        print(request.filter[:10])
-        result = [{"index": i, "data": d} for i, d in zip(request.filter, position_data[0])]
+        # print(f"position_data: {position_data[:10]}")
+        # 分散
+        print(f"variance: {np.var(position_data)}")
+
+        result = [{"index": i, "data": d} for i, d in zip(request.filter, position_data[0].tolist())]
+        print(f"result: {result[:10]}")
+
+        return {"data": result}
+
     except Exception as e:
         print(e)
-        return {"data": []}
-    return {"data": result}
+        return [{"data": 0, "index": 0}]
 
 @app.get("/config")
 async def get_config():
@@ -67,5 +78,5 @@ async def root():
 
 @app.get("/test")
 async def test_endpoint():
-
+    print("test")
     return {"message": "test"}

@@ -22,7 +22,7 @@ data = np.random.rand(1000, 10)
 class PCARequest(BaseModel):
     filter: List[int]
 
-@app.post("/pca/update")
+@app.post("/update")
 async def pca(request: PCARequest):
     # Filter the data using the provided indices
     filter_array = np.array(request.filter)
@@ -39,7 +39,7 @@ async def pca(request: PCARequest):
 
 class InitRequest(BaseModel):
     options: str
-@app.post("/pca/init")
+@app.post("/init")
 async def pca_init(InitRequest: InitRequest):
     pca = PCA(n_components=2)
     result = pca.fit_transform(data).tolist()

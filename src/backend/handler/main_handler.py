@@ -8,6 +8,8 @@ from handler.dimensional_reduce_handler import DimensionalReduceHandler
 from handler.visualize_handler import VisualizeHandler
 from handler.filter_handler import FilterHandler
 
+from model.position_data import PositionData
+
 class MainHandler:
     def __init__(self):
         self.config = {
@@ -22,9 +24,13 @@ class MainHandler:
         self.filter_handler = FilterHandler()
 
         self.visualize_handler = VisualizeHandler(self.data_handler, self.filter_handler, self.dimensinal_reduce_handler, self.alignment_handler)
+    
+    def reset(self):
+        self.visualize_handler = VisualizeHandler(self.data_handler, self.filter_handler, self.dimensinal_reduce_handler, self.alignment_handler
+    )
 
-    def get_initial_data(self):
-        return self.visualize_handler.transition_data.data_list[0]
+    def get_initial_data(self) -> PositionData:
+        return self.visualize_handler.transition_data.data_list
 
 
     def update(self, indeices: List[int]):
