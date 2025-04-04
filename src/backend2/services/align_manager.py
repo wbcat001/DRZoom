@@ -6,7 +6,7 @@ class Aligner(ABC):
     def __init__(self):
         super().__init__()
 
-    def align(self, X:np.ndarray ) -> np.ndarray:
+    def align(self, X:np.ndarray, Y:np.ndarray ) -> np.ndarray:
         pass
 
 
