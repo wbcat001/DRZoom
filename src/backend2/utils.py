@@ -1,3 +1,4 @@
+# 全体で使用する関数を定義
 from functools import wraps
 import time 
 

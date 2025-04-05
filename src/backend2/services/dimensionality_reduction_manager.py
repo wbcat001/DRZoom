@@ -5,28 +5,7 @@ from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from config_manager import DimensionalityReductionType
 
-class DimensinalityReductionManager(Processor):
-    def __init__(self, method: DimensionalityReductionType = "pca", n_components:int = 2):
-        self.method:DimensionalityReductionType = method
-        self.n_components = n_components
-        self.reducer = self.get_reducer(method)
 
-    def get_reducer(self, method: DimensionalityReductionType):
-        if method == "pca":
-            return  PCADimensionalityReducer(self.n_components)
-        elif method == "tsne":
-            return TSNEDimensionalReducer(self.n_components)
-        else:
-            print(f"invalid method: {method}, use pca instead")
-            # return PCADimensionalityReducer(self.n_components)
-            raise ValueError(f"invalid method: {method}")
-
-
-    def process(self, X: np.ndarray) -> np.ndarray:
-        if self.reducer is None:
-            raise ValueError("reducer is not set")
-        
-        return self.reducer.reduce(X)
 
 
 #### Dimensionality Reducer ####
@@ -66,6 +45,31 @@ class TSNEDimensionalReducer(DimensionalityReducer):
         super().__init__(n_components)
         
 
-    def fit_transform(self, X: np.ndarray) -> np.ndarray:
+    def reduce(self, X: np.ndarray) -> np.ndarray:
         tsne = TSNE(n_components=self.n_components)
         return tsne.fit_transform(X)
+    
+
+
+class DimensionalityReductionManager(Processor):
+    def __init__(self, method: DimensionalityReductionType = "pca", n_components:int = 2):
+        self.method: DimensionalityReductionType = method
+        self.n_components = n_components
+        self.reducer = self.get_reducer(method)
+
+    def get_reducer(self, method: DimensionalityReductionType) -> DimensionalityReducer:
+        if method == "pca":
+            return PCADimensionalityReducer(self.n_components)
+        elif method == "tsne":
+            return TSNEDimensionalReducer(self.n_components)
+        else:
+            print(f"invalid method: {method}, use pca instead")
+            # return PCADimensionalityReducer(self.n_components)
+            raise ValueError(f"invalid method: {method}")
+
+
+    def process(self, X: np.ndarray) -> np.ndarray:
+        if self.reducer is None:
+            raise ValueError("reducer is not set")
+        
+        return self.reducer.reduce(X)

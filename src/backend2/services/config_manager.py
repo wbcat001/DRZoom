@@ -1,11 +1,27 @@
 from abc import ABC, abstractmethod
-from typing import Literal, TypedDict
+from typing import Literal, TypedDict, Union, List
 from core import BaseConfig, BaseConfigManager
 
+ProcessType = Literal["dimensionality_reduction", "alignment"]
 
 DimensionalityReductionType = Literal["pca", "tsne", "custom_pca"]
 AlignmentType = Literal["procrustes", "none"]
+
+class DimensionalityReductionConfig(TypedDict):
+    type: Literal["dimensionality_reduction"]
+    method: DimensionalityReductionType
+    # オプションの追加設定もできる
+    # n_components: int
     
+class AlignmentConfig(TypedDict):
+    type: Literal["alignment"]
+    method: AlignmentType
+    # optional parameters
+    # normalize: bool
+
+ProcessConfig = Union[DimensionalityReductionConfig, AlignmentConfig]
+PipelineConfig = List[ProcessConfig]
+
 
 class Config(BaseConfig):
     dimensionality_reduction: DimensionalityReductionType
