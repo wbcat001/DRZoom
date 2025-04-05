@@ -6,29 +6,24 @@ from typing import List
 from dimensionality_reduction_manager import DimensionalityReductionManager
 from align_manager import AlignManager
 from config_manager import PipelineConfig
+from model import PositionData, HighDimensionalData
 
-"""
-dimentionality_reductionだと、
-method: pca, tsne,
-n_components: number
 
-alignmentだと
-method: procrustes, none
-
-"""
 #
 
 
-class ProcessManager(BaseProcessManager):
+class ProcessManager(BaseProcessManager[PositionData]):
+    """
+    パイプラインの構築、inputのデータ形式を決定する
+    """
     def __init__(self, config: PipelineConfig):
         super().__init__()
         self.config = config
+        self.process_pipeline = ProcessPipeline(config)
 
-    def process(self, data):
-        # ここを変更することで、パイプラインの構築を変えたり色々
-        process = 
-
-        return data
+    def process(self, prev_layout: PositionData, data: HighDimensionalData) -> PositionData:
+        
+        return self.process_pipeline.execute(data)
     
 
 # PipelineのProcessの中でつなぎ合わせるもの
@@ -76,18 +71,4 @@ class ProcessPipeline:
             X = processor.process(X)
         
         return X
-    
 
-
-        
-
-
-    
-
-
-
-    
-
-
-    
-#### aligner

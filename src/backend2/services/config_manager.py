@@ -2,11 +2,15 @@ from abc import ABC, abstractmethod
 from typing import Literal, TypedDict, Union, List
 from core import BaseConfig, BaseConfigManager
 
+
+# 処理の種類
 ProcessType = Literal["dimensionality_reduction", "alignment"]
 
+# 各処理の手法の種類
 DimensionalityReductionType = Literal["pca", "tsne", "custom_pca"]
 AlignmentType = Literal["procrustes", "none"]
 
+# Configの具体的な型定義
 class DimensionalityReductionConfig(TypedDict):
     type: Literal["dimensionality_reduction"]
     method: DimensionalityReductionType

@@ -39,14 +39,14 @@ class BaseLayoutManager(Generic[T], ABC):
     @abstractmethod
     def init_layout(self) -> T:
         """
-        Initialize the layout.
+        レイアウトの初期化を行う.初期化が特殊な場合には定義する
         """
         pass
 
     @abstractmethod
     def update_layout(self) -> T:
         """
-        Update the layout with new data.
+        レイアウトの更新を行う
         """
         pass
 
@@ -56,29 +56,51 @@ class BaseLayoutManager(Generic[T], ABC):
 #### Main ####
 class BaseMainManager(ABC):
     data_manager: BaseDataManager
-    config_manager: BaseConfigManager
     process_manager: BaseProcessManager
     layout_manager: BaseLayoutManager
+    config: BaseConfig
 
-    def __init__(self, data_manager: BaseDataManager, config_manager: BaseConfigManager, process_manager: BaseProcessManager, layout_manager: BaseLayoutManager) -> None:
+    def __init__(self, data_manager: BaseDataManager, process_manager: BaseProcessManager, layout_manager: BaseLayoutManager, config: BaseConfig) -> None:
         self.data_manager = data_manager
-        self.config_manager = config_manager
         self.process_manager = process_manager
         self.layout_manager = layout_manager
+        self.config = config
 
     @abstractmethod
     def load_data(self) -> None:
+        """
+        DataManagerにてデータを読み込む
+        """
         pass
 
     @abstractmethod
     def init_layout(self) -> None:
+        """
+        LayoutManagerにてレイアウトを初期化する
+        """
         pass
 
     @abstractmethod
     def update_layout(self) -> None:
+        """
+        LayoutManagerにてレイアウトを更新する
+        """
         pass
 
     @abstractmethod
-    def update_config(self):
+    def get_config(self) -> BaseConfig:
+        """
+        Configを取得する
+        """
+        pass
+
+    @abstractmethod
+    def update_config(self) -> None:
+        """
+        Configの変更を反映する
+        - 処理のプロセスの変更
+        - 使用するデータの変更
+        - レイアウトの初期化
+        """
         pass
 

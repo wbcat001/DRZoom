@@ -13,6 +13,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+
 # 型定義
 
 class ZoomRequest(BaseModel):

@@ -3,7 +3,6 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from model import HighDimensionalData, MetaData, Data
-
 from core import BaseDataManager
 
 import numpy as np
@@ -18,11 +17,10 @@ class DataManager(BaseDataManager):
         root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
         dir_path = os.path.join(root_dir, dir_path)
         self.dir_path = dir_path
-
         self.data = self.load()
 
 
-    def load(self):
+    def load(self) -> Data:
         high_dim_data = self.load_high_dimensional_data(os.path.join(self.dir_path, "high_dim_data.pkl"))
         metadata = self.load_metadata(os.path.join(self.dir_path, "metadata.csv"))
         return Data(high_dim_data, metadata)
@@ -58,6 +56,9 @@ class DataManager(BaseDataManager):
             return metadata
         except Exception as e:
             raise Exception(f"failed to load metadata: {e}")
+        
+    def get_data(self) -> Data:
+        return self.data
 
     
    
