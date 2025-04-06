@@ -5,7 +5,7 @@ from process_manager import ProcessManager
 from data_manager import DataManager
 from filter_manager import FilterManager
 from model import PositionData
-
+from config_manager import PipelineConfig
 from typing import List
 
 
@@ -20,14 +20,30 @@ class LayoutManager(BaseLayoutManager[PositionData]):
     def __init__(self, filter_manager:FilterManager) -> None:
         self.filter_manager = filter_manager   
     
-    def initialize_layout(self) -> PositionData:
+    def init_layout(self,
+                    data_manager: DataManager, process_manager:ProcessManager,
+                    config: PipelineConfig) -> PositionData:
+            
         """
         レイアウトの初期化を行う.初期化が特殊な場合には定義する
         """
-        # Initialize the layout with the processed data
-        pass
+        high_dim_data = data_manager.get_data().high_dim_data
+        layout = process_manager.process(
+            data=high_dim_data, 
+            prev_layout=None, 
+            config=config
+        )
+        
+        
+        return layout
 
-    def update_layout(self, indecies: List[int], prev_indecies: List[int], prev_layout: PositionData, data_manager: DataManager, process_manager:ProcessManager) -> PositionData:
+    def update_layout(self, 
+                      indecies: List[int], 
+                      prev_indecies: List[int], 
+                      prev_layout: PositionData, 
+                      data_manager: DataManager, process_manager:ProcessManager,
+                      config: PipelineConfig
+                      ) -> PositionData:
         """
         レイアウトの更新を行う
         """
@@ -43,7 +59,7 @@ class LayoutManager(BaseLayoutManager[PositionData]):
         filtered_high_dim_data = self.filter_manager.filter_high_dim_data(common_indecies, high_dim_data)
 
         # レイアウトの計算
-        new_layout = process_manager.process(filtered_high_dim_data, prev_filtered_position_data)
+        new_layout = process_manager.process(filtered_high_dim_data, prev_filtered_position_data, config=config)
         
 
         return new_layout
@@ -53,12 +69,27 @@ class LayoutManager(BaseLayoutManager[PositionData]):
 
 if __name__ == "__main__":
     # Example usage
-    layout_manager = LayoutManager(process_manager=ProcessManager())
-    layout_manager.initialize_layout()
+    layout_manager = LayoutManager(filter_manager=FilterManager())
+    data_manager = DataManager(dir_path="")
+    process_manager = ProcessManager()
+    from config_manager import AlignmentConfig, DimensionalityReductionConfig
+
+    pipeline_config:PipelineConfig = [
+        DimensionalityReductionConfig(type="dimensionality_reduction", method="pca"),
+        AlignmentConfig(type="alignment", method="procrustes")
+    ]
+    # layout_manager.init_layout()
     import numpy as np
     sample_prev_layout = np.random.rand(100, 2)  # Example data
     sample_data = np.random.rand(100, 100)  # Example data
     sample_indecies = list(range(100))  # Example indecies
     sample_prev_indecies = list(range(100))  # Example indecies
-    layout_manager.update_layout(sample_indecies, sample_prev_indecies, sample_prev_layout, sample_data)
+    print(layout_manager.update_layout(
+        indecies=sample_indecies,
+        prev_indecies=sample_prev_indecies,
+        prev_layout=sample_prev_layout,
+        data_manager=data_manager,
+        process_manager=process_manager,
+        config=pipeline_config
+    ).shape)
     

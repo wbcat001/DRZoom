@@ -14,6 +14,7 @@ import pickle
 class DataManager(BaseDataManager):
 
     def __init__(self, dir_path: str):
+        dir_path = "data\\text\\alice\\"
         root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
         dir_path = os.path.join(root_dir, dir_path)
         self.dir_path = dir_path
@@ -62,4 +63,8 @@ class DataManager(BaseDataManager):
 
     
    
-    
+if __name__ == "__main__":
+    data_manager = DataManager("data\\text\\alice\\")
+    data = data_manager.get_data()
+    print(data.high_dim_data.shape)
+    print(data.metadata.head())

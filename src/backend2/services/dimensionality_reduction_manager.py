@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from process_manager import Processor
+from core import Processor
 import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
@@ -14,7 +14,7 @@ class DimensionalityReducer(ABC):
 
     @abstractmethod
     def __init__(self, n_components:int):
-        self.n_compoenents = n_components
+        self.n_components = n_components
     
     @abstractmethod
     def reduce(self, X: np.ndarray) -> np.ndarray:
@@ -73,3 +73,11 @@ class DimensionalityReductionManager(Processor):
             raise ValueError("reducer is not set")
         
         return self.reducer.reduce(X)
+    
+
+if __name__ == "__main__":
+    # Example usage
+    reducer = DimensionalityReductionManager(method="pca")
+    data = np.random.rand(100, 10)  # Example data
+    reduced_data = reducer.process(data)
+    print(reduced_data.shape)

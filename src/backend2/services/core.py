@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import TypedDict, Literal, List, TypeVar, Generic
 
 #### Config ####
-class BaseConfig(TypedDict):
+class BaseConfig():
     pass
 
 class BaseConfigManager(ABC):
@@ -51,7 +51,14 @@ class BaseLayoutManager(Generic[T], ABC):
         pass
 
     
+# PipelineのProcessの中でつなぎ合わせるもの
+class Processor(ABC):
+    def __init__(self):
+        pass
 
+    @abstractmethod    
+    def process(self):
+        pass
 
 #### Main ####
 class BaseMainManager(ABC):
