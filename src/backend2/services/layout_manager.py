@@ -1,11 +1,11 @@
 
 
-from core import BaseLayoutManager
-from process_manager import ProcessManager
-from data_manager import DataManager
-from filter_manager import FilterManager
-from model import PositionData
-from config_manager import PipelineConfig
+from services.core import BaseLayoutManager
+from services.process_manager import ProcessManager
+from services.data_manager import DataManager
+from services.filter_manager import FilterManager
+from services.model import PositionData
+from services.config import PipelineConfig
 from typing import List
 
 
@@ -15,15 +15,16 @@ class LayoutManager(BaseLayoutManager[PositionData]):
     2. 一つ前のレイアウトと現在のデータを元に、レイアウトを更新
     の動作に関するクラス 
     """
-    filter_manager: FilterManager
+    filter_manager: FilterManager = FilterManager()
 
-    def __init__(self, filter_manager:FilterManager) -> None:
-        self.filter_manager = filter_manager   
+    def __init__(self, ) -> None:
+        pass
     
     def init_layout(self,
-                    data_manager: DataManager, process_manager:ProcessManager,
+                    data_manager: DataManager,
+                    process_manager: ProcessManager,
                     config: PipelineConfig) -> PositionData:
-            
+        
         """
         レイアウトの初期化を行う.初期化が特殊な場合には定義する
         """
@@ -33,8 +34,7 @@ class LayoutManager(BaseLayoutManager[PositionData]):
             prev_layout=None, 
             config=config
         )
-        
-        
+
         return layout
 
     def update_layout(self, 
@@ -50,7 +50,6 @@ class LayoutManager(BaseLayoutManager[PositionData]):
         # 多段階のレイアウト更新を行う場合はoutputを配列にする
         # frame: List[PositionData] = []
         
-
         high_dim_data = data_manager.get_data().high_dim_data
         common_indecies = list(set(indecies) & set(prev_indecies))
 

@@ -1,12 +1,12 @@
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..",   )))
 from abc import ABC, abstractmethod
-from core import Processor
+from services.core import Processor
 import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
-from config_manager import DimensionalityReductionType
-
-
-
+from services.config import DimensionalityReductionType
 
 #### Dimensionality Reducer ####
 class DimensionalityReducer(ABC):
@@ -50,7 +50,6 @@ class TSNEDimensionalReducer(DimensionalityReducer):
         return tsne.fit_transform(X)
     
 
-
 class DimensionalityReductionManager(Processor):
     def __init__(self, method: DimensionalityReductionType = "pca", n_components:int = 2):
         self.method: DimensionalityReductionType = method
@@ -64,9 +63,7 @@ class DimensionalityReductionManager(Processor):
             return TSNEDimensionalReducer(self.n_components)
         else:
             print(f"invalid method: {method}, use pca instead")
-            # return PCADimensionalityReducer(self.n_components)
             raise ValueError(f"invalid method: {method}")
-
 
     def process(self, X: np.ndarray) -> np.ndarray:
         if self.reducer is None:

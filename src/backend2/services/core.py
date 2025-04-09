@@ -1,6 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import TypedDict, Literal, List, TypeVar, Generic
-
+from typing import  TypeVar, Generic
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..",   )))
+from utils import calc_time
 #### Config ####
 class BaseConfig():
     pass
@@ -50,15 +53,23 @@ class BaseLayoutManager(Generic[T], ABC):
         """
         pass
 
-    
 # PipelineのProcessの中でつなぎ合わせるもの
 class Processor(ABC):
     def __init__(self):
         pass
 
+    
     @abstractmethod    
     def process(self):
         pass
+
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls.process = calc_time(cls.process)
+        return cls._instance
 
 #### Main ####
 class BaseMainManager(ABC):
@@ -81,14 +92,14 @@ class BaseMainManager(ABC):
         pass
 
     @abstractmethod
-    def init_layout(self) -> None:
+    def init_layout(self):
         """
         LayoutManagerにてレイアウトを初期化する
         """
         pass
 
     @abstractmethod
-    def update_layout(self) -> None:
+    def update_layout(self):
         """
         LayoutManagerにてレイアウトを更新する
         """

@@ -1,15 +1,15 @@
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from core import BaseProcessManager, Processor
+from services.core import BaseProcessManager, Processor
 from abc import ABC, abstractmethod
 import numpy as np
 from typing import List, Optional
 
-from dimensionality_reduction_manager import DimensionalityReductionManager
-from align_manager import AlignManager
-from config_manager import PipelineConfig
-from model import PositionData, HighDimensionalData
+from services.dimensionality_reduction_manager import DimensionalityReductionManager
+from services.align_manager import AlignManager
+from services.config import PipelineConfig
+from services.model import PositionData, HighDimensionalData
 
 #
 
@@ -26,6 +26,7 @@ class ProcessManager(BaseProcessManager[PositionData]):
                 prev_layout: PositionData, 
                 config: PipelineConfig) -> PositionData:
         self.process_pipeline = ProcessPipeline(config, prev_layout)
+        print(f"len(self.process_pipeline.pipeline): {len(self.process_pipeline.pipeline)}")
 
         return self.process_pipeline.execute(data)
     
@@ -42,38 +43,32 @@ class ProcessPipeline:
         self.generate(config, prev_layout)
     
     def generate(self, config: PipelineConfig, prev_layout: Optional[PositionData]):
+        self.pipeline = []
+        print("config", config)
+
         # process_typesを元に、Pipelineを生成する
         for process_config in config:
             process_type = process_config.type
             if process_type == "dimensionality_reduction":
                 method = process_config.method
-                n_components = 2 # hardcoded
-                self.pipeline.append(DimensionalityReductionManager(method, n_components))
+                self.pipeline.append(DimensionalityReductionManager(method))
             elif process_type == "alignment":
                 method = process_config.method
-                # X = np.random.rand(100, 2) # dummy data
-                # align元を事前に関数に組み込む
-                # カリー化https://qiita.com/ytaki0801/items/a0c18a78f6f8f5c8fe2a
                 self.pipeline.append(AlignManager(prev_layout, method))
             else:
                 raise ValueError(f"Invalid process type: {process_type}")
-    
-    def update(self, config: PipelineConfig):
-        self.pipeline = []
-        prev_layout = None
-        self.generate(config, prev_layout)
 
     def execute(self, X: np.ndarray) -> np.ndarray:
-        # Implement your pipeline execution logic here
         for processor in self.pipeline:
             X = processor.process(X)
-        
+            print(f"Processed data shape: {X.shape}")
+        print(f"Final processed data shape: {X.shape}")
         return X
 
 
 if __name__ == "__main__":
     # Example usage
-    from config_manager import DimensionalityReductionConfig, AlignmentConfig
+    from services.config import DimensionalityReductionConfig, AlignmentConfig
     config = [
         DimensionalityReductionConfig(type="dimensionality_reduction", method="pca"),
         AlignmentConfig(type="alignment", method="procrustes")

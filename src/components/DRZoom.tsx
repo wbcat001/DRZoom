@@ -104,9 +104,11 @@ const App: React.FC = () => {
       .on("mousemove", function(event){return tooltip.style("top", (event.pageY-10)+"px").style("left",(event.pageX+10)+"px");})
       .on("mouseout", function(){return tooltip.style("visibility", "hidden");});
       
-      
+     
 
-    const zoom = d3.zoom<SVGSVGElement, unknown>().scaleExtent([1, 10]).on('zoom', zoomed);
+    const zoom = d3.zoom<SVGSVGElement, unknown>().scaleExtent([0, 10]).on('zoom', zoomed);
+
+    // .scaleExtent([0, 10]).on('zoom', zoomed);
 
     
     svg.call(zoom as any);
@@ -115,6 +117,7 @@ const App: React.FC = () => {
     // filter, fetch data, update data
     function zoomed(event: d3.D3ZoomEvent<SVGSVGElement, unknown>) {
       const transform = event.transform;
+      console.log("transform", transform);
 
       g.selectAll('.dot')
         .data(data)
@@ -146,7 +149,7 @@ const App: React.FC = () => {
         //   filter: selectedIndexes,
         // });
         console.log('Selected Indexes:', selectedIndexes.length);
-        const res = await fetch('http://localhost:8000/update', {
+        const res = await fetch('http://localhost:8000/zoom', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -172,7 +175,7 @@ const App: React.FC = () => {
       g.selectAll('.dot')
         .data(newData, (d) => (d as DataPoint).index)
         .transition()
-        .duration(1000) // Animation duration
+        .duration(100) // Animation duration
         .attr('cx', (d) => x(d.x))
         .attr('cy', (d) => y(d.y))
         .style('fill', 'red');

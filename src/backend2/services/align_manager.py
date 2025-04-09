@@ -1,9 +1,11 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import numpy as np
 from abc import ABC, abstractmethod
-from core import Processor
 from scipy.spatial import procrustes
-from config_manager import AlignmentType
-
+from services.core import Processor
+from services.config import AlignmentType
 
 class Aligner(ABC):
     X: np.ndarray
@@ -17,7 +19,6 @@ class Aligner(ABC):
         YをXにアライメントする
         """
         pass
-
 
 class ProcrustesAligner(Aligner):
     def __init__(self, X: np.ndarray):
@@ -43,7 +44,7 @@ class NoAligner(Aligner):
         return Y
 
 
-# Aliger: 手法を選択することで、alignerを選択する
+
 class AlignManager(Processor):
     def __init__(self, X: np.ndarray, method: AlignmentType = "procrustes" ):
         super().__init__()
@@ -63,8 +64,6 @@ class AlignManager(Processor):
 
     def process(self, X:np.ndarray) -> np.ndarray:
         return self.aligner.align(X)
-
-    
 
 
 if __name__ == "__main__":
