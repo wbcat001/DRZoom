@@ -14,7 +14,6 @@ from services.model import PositionData, HighDimensionalData
 
 #
 
-
 class ProcessManager(BaseProcessManager[PositionData]):
     """
     パイプラインの構築、inputのデータ形式を決定する
@@ -29,12 +28,13 @@ class ProcessManager(BaseProcessManager[PositionData]):
         prev_layout: PositionData,
         config: PipelineConfig,
     ) -> PositionData:
+        self.data = data
         self.process_pipeline = ProcessPipeline(config, prev_layout)
         print(
             f"len(self.process_pipeline.pipeline): {len(self.process_pipeline.pipeline)}"
         )
 
-        return self.process_pipeline.execute(data)
+        return self.process_pipeline.execute(self.data)
 
 
 ## 設定配列を元に、パイプラインを構築する
