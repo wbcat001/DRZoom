@@ -1,4 +1,3 @@
-
 from utils import calc_time
 from abc import ABC, abstractmethod
 import functools
@@ -15,6 +14,7 @@ class BaseProcessor(ABC):
     BaseProcessManagerは、Processorを継承したクラスを持つ
     そのため、processメソッドを持つ
     """
+
     @abstractmethod
     def process(self):
         pass
@@ -23,14 +23,15 @@ class BaseProcessor(ABC):
         cls.process = calc_time(cls.process)
         return super().__new__(cls)
 
+
 class Processor(BaseProcessor):
     """
     Processorは、BaseProcessManagerの中でつなぎ合わせるもの
     """
+
     def __init__(self):
         pass
 
-    
     def process(self):
         super().process()
         count = 0

@@ -1,12 +1,23 @@
 from abc import ABC, abstractmethod
-from typing import  TypeVar, Generic
+from typing import TypeVar, Generic
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..",   )))
+
+sys.path.append(
+    os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__),
+            "..",
+        )
+    )
+)
 from utils import calc_time
+
+
 #### Config ####
-class BaseConfig():
+class BaseConfig:
     pass
+
 
 class BaseConfigManager(ABC):
     @abstractmethod
@@ -17,11 +28,14 @@ class BaseConfigManager(ABC):
     def set_config(self, config: BaseConfig) -> None:
         pass
 
+
 #### Data ####
-T = TypeVar('T')
+T = TypeVar("T")
+
 
 class BaseDataManager(Generic[T], ABC):
     data: T
+
     @abstractmethod
     def __init__(self):
         self.data = self.load()
@@ -38,6 +52,7 @@ class BaseProcessManager(Generic[T], ABC):
     def process(self) -> T:
         pass
 
+
 class BaseLayoutManager(Generic[T], ABC):
     @abstractmethod
     def init_layout(self) -> T:
@@ -53,13 +68,13 @@ class BaseLayoutManager(Generic[T], ABC):
         """
         pass
 
+
 # PipelineのProcessの中でつなぎ合わせるもの
 class Processor(ABC):
     def __init__(self):
         pass
 
-    
-    @abstractmethod    
+    @abstractmethod
     def process(self):
         pass
 
@@ -71,6 +86,7 @@ class Processor(ABC):
             cls.process = calc_time(cls.process)
         return cls._instance
 
+
 #### Main ####
 class BaseMainManager(ABC):
     data_manager: BaseDataManager
@@ -78,7 +94,13 @@ class BaseMainManager(ABC):
     layout_manager: BaseLayoutManager
     config: BaseConfig
 
-    def __init__(self, data_manager: BaseDataManager, process_manager: BaseProcessManager, layout_manager: BaseLayoutManager, config: BaseConfig) -> None:
+    def __init__(
+        self,
+        data_manager: BaseDataManager,
+        process_manager: BaseProcessManager,
+        layout_manager: BaseLayoutManager,
+        config: BaseConfig,
+    ) -> None:
         self.data_manager = data_manager
         self.process_manager = process_manager
         self.layout_manager = layout_manager
@@ -121,4 +143,3 @@ class BaseMainManager(ABC):
         - レイアウトの初期化
         """
         pass
-

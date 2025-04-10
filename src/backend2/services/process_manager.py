@@ -1,5 +1,6 @@
 import sys
 import os
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from services.core import BaseProcessManager, Processor
 from abc import ABC, abstractmethod
@@ -18,30 +19,32 @@ class ProcessManager(BaseProcessManager[PositionData]):
     """
     パイプラインの構築、inputのデータ形式を決定する
     """
+
     def __init__(self):
         super().__init__()
-    
-    def process(self,
-                data: HighDimensionalData, 
-                prev_layout: PositionData, 
-                config: PipelineConfig) -> PositionData:
+
+    def process(
+        self,
+        data: HighDimensionalData,
+        prev_layout: PositionData,
+        config: PipelineConfig,
+    ) -> PositionData:
         self.process_pipeline = ProcessPipeline(config, prev_layout)
-        print(f"len(self.process_pipeline.pipeline): {len(self.process_pipeline.pipeline)}")
+        print(
+            f"len(self.process_pipeline.pipeline): {len(self.process_pipeline.pipeline)}"
+        )
 
         return self.process_pipeline.execute(data)
-    
-
-
-    
 
 
 ## 設定配列を元に、パイプラインを構築する
 ## (process_type -> 選択)[] {"dimensionality_reduction": "pca", "alignment": "procrustes"}
 class ProcessPipeline:
     pipeline: List[Processor] = []
-    def __init__(self, config: PipelineConfig, prev_layout: PositionData):     
+
+    def __init__(self, config: PipelineConfig, prev_layout: PositionData):
         self.generate(config, prev_layout)
-    
+
     def generate(self, config: PipelineConfig, prev_layout: Optional[PositionData]):
         self.pipeline = []
         print("config", config)
@@ -59,6 +62,7 @@ class ProcessPipeline:
                 raise ValueError(f"Invalid process type: {process_type}")
 
     def execute(self, X: np.ndarray) -> np.ndarray:
+        X = X.copy()
         for processor in self.pipeline:
             X = processor.process(X)
             print(f"Processed data shape: {X.shape}")
@@ -69,13 +73,15 @@ class ProcessPipeline:
 if __name__ == "__main__":
     # Example usage
     from services.config import DimensionalityReductionConfig, AlignmentConfig
+
     config = [
         DimensionalityReductionConfig(type="dimensionality_reduction", method="pca"),
-        AlignmentConfig(type="alignment", method="procrustes")
+        AlignmentConfig(type="alignment", method="procrustes"),
     ]
     prev_layout = np.random.rand(1000, 2)  # Dummy previous layout
     data = np.random.rand(1000, 700)  # Dummy data
     import time
+
     start = time.time()
     process_manager = ProcessManager()
     print(f"time: {time.time() - start} seconds")

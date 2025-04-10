@@ -7,7 +7,6 @@ import DRZoom from './components/DRZoom';
 function App() {
   return (
     <>
-      {/*4:8の画面比率で設定P画面、Plot画面のレイアウト use Grid, tailwind*/}
       <div className="grid grid-cols-4 grid-rows-8 gap-4 h-screen">
         {/* 左側のメニュー
         <div className="col-span-1 row-span-8">

@@ -18,11 +18,14 @@ main_manager = MainManager()
 
 # 型定義
 
+
 class ZoomRequest(BaseModel):
     filter: List[int]
 
+
 class InitRequest(BaseModel):
     options: str
+
 
 @app.post("/init")
 async def init(init_request: InitRequest):
@@ -35,7 +38,7 @@ async def init(init_request: InitRequest):
         print(e)
         # internal_server_error
         return {"error": "Internal Sserver Error", "status_code": 500}
-    
+
 
 @app.post("/zoom")
 async def zoom(request: ZoomRequest):
@@ -51,13 +54,16 @@ async def zoom(request: ZoomRequest):
         # internal_server_error
         return {"error": "Internal Sserver Error", "status_code": 500}
 
+
 @app.post("/update_config")
 async def update_config(request: ZoomRequest):
     pass
 
+
 @app.get("/test")
 async def test():
     return {"message": "Hello World."}
+
 
 """
 uvicorn main:app --reload
