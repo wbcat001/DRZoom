@@ -1,3 +1,7 @@
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from typing import Literal, Union, List
 from dataclasses import dataclass
 from abc import ABC
