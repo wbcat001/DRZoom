@@ -4,27 +4,12 @@ import pandas as pd
 import sys
 import traceback
 
-def read_json_lines(file_path):
-    """
-    JSONLファイル（各行が独立したJSONオブジェクト）を読み込む関数
-    """
-    data = []
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            for line in f:
-                data.append(json.loads(line))
-        return data
-    except Exception as e:
-        print(f"Error reading JSON lines from {file_path}: {e}")
-        traceback.print_exc()
-        return []
-
 def get_metadata_df(file_path):
     """
     メタデータをDataFrameに変換する関数
     """
     print(f"Attempting to read metadata from: {file_path}")
-    
+
     # ファイルが存在することを確認
     if not os.path.exists(file_path):
         print(f"File not found: {file_path}")
@@ -36,31 +21,29 @@ def get_metadata_df(file_path):
         else:
             print(f"Parent directory does not exist: {parent_dir}")
         raise FileNotFoundError(f"File not found: {file_path}")
-    
+
     print(f"File exists, size: {os.path.getsize(file_path)} bytes")
-    
-    # データを読み込む
-    data = read_json_lines(file_path)
-    
-    if not data:
-        print("No data was loaded.")
+
+    try:
+        # pd.read_jsonを使用してデータを読み込む
+        df = pd.read_json(file_path, lines=True)
+    except ValueError as e:
+        print(f"Error reading JSON file: {e}")
+        traceback.print_exc()
         return pd.DataFrame()
-    
-    # DataFrameに変換
-    df = pd.DataFrame(data)
-    
+
     return df
 
 if __name__ == "__main__":
     # 現在のワーキングディレクトリを表示
     print(f"Current working directory: {os.getcwd()}")
     
-    # 絶対パスを使用
-    absolute_path = r"c:\Users\hercu\Work_Program\DRZoom\data\arxiv\metadata.json"
-    
+    # 絶対パスを使用していた部分を、相対パスを取得するように変更
+    relative_path = os.path.join(os.getcwd(), 'data', 'arxiv', 'metadata_0.json')
+
     try:
         # メタデータを読み込む
-        df = get_metadata_df(absolute_path)
+        df = get_metadata_df(relative_path)
         
         if df.empty:
             print("DataFrame is empty. Exiting.")
