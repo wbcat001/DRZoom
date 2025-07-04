@@ -425,11 +425,13 @@ def update_pca_scatter(clear_clicks, reset_clicks, relayoutData, selectedData, s
         height=600,
         legend=dict(
             title="Legend",
-            yanchor="top",
-            y=0.99,
-            xanchor="right",
-            x=0.99
+            orientation="h",
+            yanchor="bottom",
+            y=-0.15,
+            xanchor="center",
+            x=0.5
         ),
+        margin=dict(b=80),  # Add more bottom margin for the legend
         selectdirection='d'
     )
     
