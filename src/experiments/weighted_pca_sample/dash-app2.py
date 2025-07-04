@@ -280,7 +280,8 @@ def get_points_in_lasso(selectedData, pca_result):
      Input('pca-scatter-plot', 'relayoutData'),
      Input('pca-scatter-plot', 'selectedData'),
      Input('selection-method', 'value')],
-    [State('selected-points-store', 'data')]
+    [State('selected-points-store', 'data')],
+    prevent_initial_call=True
 )
 def update_pca_scatter(clear_clicks, reset_clicks, relayoutData, selectedData, selection_method, stored_selected):
     ctx = dash.callback_context
@@ -489,11 +490,12 @@ def run_weighted_pca_region(selected_indices, num_iterations=30):
      Output('distances-plot', 'figure'),
      Output('ccr-plot', 'figure'),
      Output('animation-slider', 'max'),
-     Output('digit-image-plot', 'figure'),
-     Output('digit-details', 'children')],
+     Output('digit-image-plot', 'figure', allow_duplicate=True),
+     Output('digit-details', 'children', allow_duplicate=True)],
     [Input('run-animation', 'n_clicks')],
     [State('selected-points-store', 'data'),
-     State('num-iterations-slider', 'value')]
+     State('num-iterations-slider', 'value')],
+    prevent_initial_call=True
 )
 def run_animation(n_clicks, selected_indices, num_iterations):
     if n_clicks == 0:
@@ -729,8 +731,8 @@ def update_frame(selected_frame, current_fig):
 # Callback to handle clicks on animation plot and display digit image
 @app.callback(
     [Output('clicked-digit-info', 'children'),
-     Output('digit-image-plot', 'figure'),
-     Output('digit-details', 'children')],
+     Output('digit-image-plot', 'figure', allow_duplicate=True),
+     Output('digit-details', 'children', allow_duplicate=True)],
     [Input('animation-plot', 'clickData')],
     prevent_initial_call=True
 )
