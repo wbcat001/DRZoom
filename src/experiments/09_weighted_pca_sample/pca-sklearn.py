@@ -1,3 +1,8 @@
+"""
+sklearnからのコピー
+"""
+
+
 """Principal Component Analysis."""
 
 # Authors: The scikit-learn developers
