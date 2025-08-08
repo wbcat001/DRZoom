@@ -29,6 +29,7 @@ class Data:
         
         num_vectors = len(self.embeddings)
         result = []
+        
         for i in range(num_vectors):
             # ウィンドウ内のベクトルを収集
             window_vectors = []
