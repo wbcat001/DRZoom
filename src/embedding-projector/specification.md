@@ -1,5 +1,5 @@
 
-
+# application
 - data
 
 - reduction
@@ -24,3 +24,8 @@
 
     - data pointd
     - pivot
+
+## endpoints
+- init
+- zoom
+- click
