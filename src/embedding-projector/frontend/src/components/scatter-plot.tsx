@@ -98,25 +98,25 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({ data, onClick, selectedIndice
         .append("circle")
         .attr("cx", d => xScale(d.x))
         .attr("cy", d => yScale(d.y))
-        .attr("r", 4)
+        .attr("r", 3)
         .on("mouseover", mouseover)
         .on("mousemove", mousemove)
         .on("mouseleave", mouseleave)
         .on("click", handleClick)
-        .style("fill", "steelblue")
-        // .style("stroke", (d, i) => selectedIndices.includes(i) ? "#d63031" : "#333")
-        // .style("stroke-width", (d, i) => selectedIndices.includes(i) ? 4 : 0);
+        .style("fill", (d,i) => d.color ? d.color : "steelblue")
+        
 
         const allCircles = enterCircles.merge(circles);
 
-
-        // Update
-        allCircles.transition()
-        .duration(100)
-        .attr("r", (d, i) => selectedIndices.includes(i) ? 6 : 4)
-        .style("stroke", (d, i) => selectedIndices.includes(i) ? "#d63031" : "#333")
-        .style("stroke-width", (d, i) => selectedIndices.includes(i) ? 5 : 0);
-
+        if (selectedIndices.length > 0) {
+            // Update
+            allCircles.transition()
+            .duration(100)
+            .attr("r", (d, i) => selectedIndices.includes(i) ? 6 : 4)
+            .style("fill", (d, i) => selectedIndices.includes(i) ? "#d63031" : d.color ? d.color : "#333")
+            .style("stroke", (d, i) => selectedIndices.includes(i) ? "#d63031" : "#333")
+            .style("stroke-width", (d, i) => selectedIndices.includes(i) ? 5 : 0);
+        }
         circles.exit()
         .transition()
         .duration(300)
