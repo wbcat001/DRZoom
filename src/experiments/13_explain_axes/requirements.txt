@@ -1,0 +1,33 @@
+# データ解析
+# numpy==2.0
+pandas
+
+# 可視化
+plotly
+matplotlib
+seaborn
+
+# 機械学習
+scikit-learn
+xgboost
+lightgbm
+
+# 数学・統計
+scipy
+statsmodels
+
+# データ入出力・ユーティリティ
+openpyxl
+xlrd
+requests
+tqdm
+joblib
+
+# 自然言語処理
+# nltk
+scipy==1.12
+gensim
+
+# Jupyter 環境用
+jupyterlab
+ipython

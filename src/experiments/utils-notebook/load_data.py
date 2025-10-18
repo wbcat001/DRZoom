@@ -14,7 +14,7 @@ def load_mnist(n_samples=None):
     y = y.astype('int')
     print(f"MNIST dataset loaded with {X.shape[0]} samples and {X.shape[1]} features.")
     print(f"Classes: {set(y)}")
-    return X, y
+    return X[:n_samples], y[:n_samples] if n_samples else (X, y)
 
 def load_fmnist(n_samples=None):
     fashion_mnist = fetch_openml('Fashion-MNIST', version=1, as_frame=False)
