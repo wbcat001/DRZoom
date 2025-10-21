@@ -31,3 +31,5 @@ old/*
 data
 GoogleNews-vectors-negative300.bin
 */20news-bydate/*
+*.pickle
+*.pkl
