@@ -1,0 +1,4 @@
+min_cluster_size: 10
+min_samples: 5
+cluster_selection_method: leaf
+max_cluster_size: 1000

@@ -204,7 +204,7 @@ def run_hdbscan(X, min_cluster_size=5, min_samples=5, cluster_selection_epsilon=
     if metric == "euclidean":
         matrix = X
         metric_name = "euclidean"
-    if metric == "cosine":
+    elif metric == "cosine":
         matrix = cosine_similarity(X)
         print(f"matrix shape: {matrix.shape}")
         metric_name = "precomputed"

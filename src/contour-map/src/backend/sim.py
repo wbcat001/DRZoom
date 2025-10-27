@@ -25,8 +25,10 @@ initial_embedding = mapper.embedding_
 
 # HDBSCANのデンドログラムからシミュレーション用のλ値を定義
 # λが小さいほど粗いクラスタリング (Overview)
-min_lambda = hdb.condensed_tree_['lambda_val'].min()
-max_lambda = hdb.condensed_tree_['lambda_val'].max()
+condensed_tree = hdb.condensed_tree_.to_pandas()
+min_lambda = condensed_tree['lambda_val'].min()
+max_lambda = condensed_tree['lambda_val'].max()
+print(f"Lambda range: {min_lambda} to {max_lambda}")
 
 # 3つのズームレベルに対応するλ値を設定 (Overview, Mid, Details)
 lambda_levels = {
