@@ -35,7 +35,7 @@ def load_cifar10(n_samples=None):
     return X, y
 
 
-def load_w2v(n_samples=5000):
+def load_w2v(n_samples=5000, is_random=True):
     print(os.getcwd())
     print(BASE_DIR)
     file_path = os.path.join(BASE_DIR, "GoogleNews-vectors-negative300.bin")
@@ -44,13 +44,21 @@ def load_w2v(n_samples=5000):
     words = model.index_to_key
     print(f"Number of words in the model: {len(words)}")
 
-    # top_n words
-    top_n = n_samples
-    top_words = words[:top_n]
-    top_vectors = np.array([model[word] for word in top_words])
-    print(f"shape of vector: {top_vectors.shape}")
+    if is_random:
+        np.random.seed(42)
+        random_indices = np.random.choice(len(words), size=n_samples, replace=False)
+        top_words = [words[i] for i in random_indices]
+        top_vectors = np.array([model[word] for word in top_words])
+        print(f"shape of vector: {top_vectors.shape}")
+        return top_vectors, top_words
+    else:
+        # top_n words
+        top_n = n_samples
+        top_words = words[:top_n]
+        top_vectors = np.array([model[word] for word in top_words])
+        print(f"shape of vector: {top_vectors.shape}")
 
-    return top_vectors, top_words
+        return top_vectors, top_words
 
 # ガウスによる人口データ生成
 
