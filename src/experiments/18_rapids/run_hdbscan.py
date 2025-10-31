@@ -11,7 +11,7 @@ from datetime import datetime
 from cuml.manifold import UMAP
 import plotly.express as px
 
-n_samples = 10000
+n_samples = 100000
 
 min_cluster_size = 5
 min_samples = 5
