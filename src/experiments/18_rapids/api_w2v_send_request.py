@@ -2,7 +2,7 @@ import requests
 import json
 import random
 from typing import List
-
+import plotly.express as px
 # --- 設定 ---
 # サーバーURLとポートは、FastAPIスクリプトの実行環境に合わせてください。
 # 例: uvicorn rapids_gpu_api_extended:app --reload がローカルで実行されている場合
@@ -71,6 +71,13 @@ def run_umap_subset_request():
         print(f"エラー詳細: {e}")
         if 'response' in locals() and response is not None:
              print(f"サーバー応答: {response.text}")
+
+
+
+    fig = px.scatter(x=[point[0] for point in embedding], y=[point[1] for point in embedding],
+                     title="UMAP Embedding from FastAPI Server",
+                     labels={"x": "UMAP Dimension 1", "y": "UMAP Dimension 2"}
+                     ).show()
 
 
 if __name__ == "__main__":
