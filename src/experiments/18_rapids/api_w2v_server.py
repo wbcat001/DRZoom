@@ -13,10 +13,11 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 # --- グローバルデータ設定 ---
-N_TOTAL = 500000  # 全データ点数 
+N_TOTAL = 100000  # 全データ点数 
 N_FEATURES = 300   # 特徴量数
 GLOBAL_DATA_DF: Optional[cudf.DataFrame] = None
 GLOBAL_DATA_X: Optional[cp.ndarray] = None # UMAPに直接渡すためのCuPy配列
+random_state = 42
 
 
 def load_w2v(n_samples=5000, is_random=True):
@@ -29,7 +30,7 @@ def load_w2v(n_samples=5000, is_random=True):
     print(f"Number of words in the model: {len(words)}")
 
     if is_random:
-        np.random.seed(42)
+        np.random.seed(random_state)
         ramdom_indices = np.random.choice(len(words), size=n_samples, replace=False)
 
     else:
