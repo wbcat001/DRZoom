@@ -1,0 +1,7 @@
+n_samples: 500000
+min_cluster_size: 5
+min_samples: 5
+cluster_selection_method: eom
+max_cluster_size: 1000
+n_neighbors: 15
+min_dist: 0.1
