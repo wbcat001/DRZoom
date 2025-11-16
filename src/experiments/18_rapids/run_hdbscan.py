@@ -20,6 +20,7 @@ cluster_selection_method = 'eom'
 
 n_neighbors = 15
 min_dist = 0.1
+random_state = 42   
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 tmp_date = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -41,7 +42,7 @@ def load_w2v(n_samples=5000, is_random=True):
     print(f"Number of words in the model: {len(words)}")
 
     if is_random:
-        np.random.seed(42)
+        np.random.seed(random_state)
         ramdom_indices = np.random.choice(len(words), size=n_samples, replace=False)
 
     else:
@@ -115,6 +116,12 @@ import pickle
 output_pickle_path = os.path.join(output_dir_path, 'condensed_tree_object.pkl')
 with open(output_pickle_path, 'wb') as f:
     pickle.dump(hdbscan_tree, f)
+
+# X, labelsを保存
+output_data_path = os.path.join(output_dir_path, 'data.npz')
+np.savez(output_data_path, X=X_cpu, labels=labels_np)
+print(f"✅ Data and labels saved ({output_data_path})")
+
 
 # ハイパーパラメータをテキスト保存
 hyperparams = {
