@@ -34,3 +34,7 @@ GoogleNews-vectors-negative300.bin
 # *.pickle
 # *.pkl
 data.npz
+w2v_vectors_100000.npy
+w2v_vectors_500000.npy
+w2v_words_100000.txt
+w2v_words_500000.txt
