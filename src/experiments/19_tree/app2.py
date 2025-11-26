@@ -658,7 +658,46 @@ df = pd.DataFrame({
     "cluster_id": [point_cluster_map[pid] for pid in point_cluster_map.keys()]
 })
 
+# # 修正版：リーフノードのみのクラスタサイズ分布
+# def get_leaf_cluster_sizes():
+#     """リーフノード（最終クラスタ）のサイズのみを取得"""
+#     # point_cluster_mapから各クラスタに属するポイント数をカウント
+#     leaf_cluster_sizes = {}
+#     for point_id, cluster_id in point_cluster_map.items():
+#         if cluster_id in leaf_cluster_sizes:
+#             leaf_cluster_sizes[cluster_id] += 1
+#         else:
+#             leaf_cluster_sizes[cluster_id] = 1
+    
+#     return list(leaf_cluster_sizes.values())
 
+# # リーフクラスタサイズの分布を取得
+# leaf_sizes = get_leaf_cluster_sizes()
+# print(f"Leaf cluster count: {len(leaf_sizes)}")
+# print(f"Leaf cluster sizes sample: {sorted(leaf_sizes, reverse=True)[:10]}")
+
+# # ヒストグラム作成
+# fig_cluster_hist = px.histogram(
+#     [size for size in leaf_sizes if size <= 1000], 
+#     nbins=min(50, len(set(leaf_sizes))), 
+#     title="Leaf Cluster Size Distribution",
+#     labels={"value": "Cluster Size", "count": "Number of Leaf Clusters"}
+# )
+# データ準備の部分で一度だけ実行
+leaf_cluster_sizes = {}
+for point_id, cluster_id in point_cluster_map.items():
+    leaf_cluster_sizes[cluster_id] = leaf_cluster_sizes.get(cluster_id, 0) + 1
+
+# サイズでソート
+sorted_sizes = sorted(leaf_cluster_sizes.values(), reverse=True)
+ranks = list(range(1, len(sorted_sizes) + 1))
+
+# 散布図
+fig_cluster_hist = px.scatter(
+    x=ranks,
+    y=sorted_sizes,
+    title="Cluster Rank vs Size"
+)
 
 
 # DBCが利用可能かチェック（Canvas環境では通常利用可能）
@@ -856,7 +895,17 @@ if DBC_AVAILABLE:
                         dcc.Graph(id='cluster-info', className="flex-grow-1")
                     ], className="d-flex flex-column p-3 h-100")
                 ], style={'height': '400px'}, className="h-100"),
-            ], width=12, className="p-2")
+            ], width=6, className="p-2"),
+            dbc.Col([
+                dbc.Card([
+                    dbc.CardBody([
+                        html.H4("Cluster Size Distribution", className="text-center mb-1"),
+                        
+                        # クラスタサイズ分布ヒストグラム
+                        dcc.Graph(id='cluster-size-info', className="flex-grow-1", figure=fig_cluster_hist)
+                    ], className="d-flex flex-column p-3 h-100")
+                ], style={'height': '400px'}, className="h-100"),
+            ], width=6, className="p-2")
         ], className="g-0")
     ], fluid=True, className="h-100")
 else:
@@ -962,6 +1011,7 @@ def update_dr_plot(n_clicks, method, interaction_mode):
 @app.callback(
     Output('dendrogram-plot', 'figure'),
     Output('cluster-info', 'figure'),
+
     [
         Input('dendro-width-option-toggle', 'value'),
         Input("dr-visualization-plot", 'selectedData')
@@ -1078,6 +1128,8 @@ def update_dendrogram_plot(width_options, selectedData):
                     color_continuous_scale='Viridis',
                     ).update_xaxes(type='category').update_yaxes(type='category')
     
+    
+    
     return fig, fig_similarity1
 
 # detail-panel-content
@@ -1112,9 +1164,16 @@ def update_detail_panel(active_tab, click_data, selected_data):
             cluster_points = [pid for pid, cid in point_cluster_map.items() if cid == cluster_id]
             stability_score = stability_dict.get(cluster_id, 0.0)
             
+            # このクラスタ内で選択された点の数を計算
+            selected_points_in_cluster = [pid for pid in selected_point_indices if pid in cluster_points]
+            total_cluster_points = len(cluster_points)
+            selected_cluster_points = len(selected_points_in_cluster)
+            
             selected_cluster_info.append({
                 'cluster_id': cluster_id,
-                'point_count': len(cluster_points),
+                'point_count': total_cluster_points,
+                'selected_points': selected_cluster_points,
+                'selection_ratio': selected_cluster_points / total_cluster_points if total_cluster_points > 0 else 0.0,
                 'stability': stability_score,
                 'sample_points': cluster_points[:5]  # 最初の5点のみ表示
             })
@@ -1155,9 +1214,10 @@ def update_detail_panel(active_tab, click_data, selected_data):
             for info in selected_cluster_info:
                 cluster_table_data.append({
                     'Cluster ID': info['cluster_id'],
-                    'Points': info['point_count'],
+                    'Selected/Total': f"{info['selected_points']}/{info['point_count']}",
+                    'Ratio': f"{info['selection_ratio']:.2%}",
                     'Stability': f"{info['stability']:.4f}",
-                    'Sample Points': ', '.join(map(str, info['sample_points']))
+                    'Sample Points': ', '.join(map(str, info['sample_points'][:3]))  # 3点に短縮
                 })
             
             return html.Div([
@@ -1190,7 +1250,8 @@ def update_detail_panel(active_tab, click_data, selected_data):
                         data=cluster_table_data,
                         columns=[
                             {'name': 'Cluster ID', 'id': 'Cluster ID'},
-                            {'name': 'Points', 'id': 'Points'},
+                            {'name': 'Selected/Total', 'id': 'Selected/Total'},
+                            {'name': 'Ratio', 'id': 'Ratio'},
                             {'name': 'Stability', 'id': 'Stability'},
                             {'name': 'Sample Points', 'id': 'Sample Points'}
                         ],
