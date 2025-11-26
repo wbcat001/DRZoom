@@ -1,4 +1,4 @@
-import random
+﻿import random
 import numpy as np
 import pandas as pd
 import dash
@@ -604,7 +604,7 @@ if DBC_AVAILABLE:
 else:
     app.layout = html.Div([html.H3("Dash Bootstrap Components not available. Please install: pip install dash-bootstrap-components")])
 
-# Callbacks
+# dr-method選択 -> パラメータ設定
 @app.callback(Output('parameter-settings', 'children'), Input('dr-method-selector', 'value'))
 def update_parameter_settings(method):
     if method == 'UMAP':
@@ -621,6 +621,7 @@ def update_parameter_settings(method):
         return html.Div([html.Label("n_components:"), dcc.Dropdown(id='pca-n-components', options=[{'label': '2', 'value': 2}, {'label': '3', 'value': 3}], value=2)])
     return html.Div()
 
+# -> DR-plot更新
 @app.callback(Output('dr-visualization-plot', 'figure'), [Input('execute-button', 'n_clicks'), Input('dr-method-selector', 'value'), Input('dr-interaction-mode-toggle', 'value')])
 def update_dr_plot(n_clicks, method, interaction_mode):
     df = pd.DataFrame(DR_DUMMY_DATA)
@@ -634,6 +635,7 @@ def update_dr_plot(n_clicks, method, interaction_mode):
     fig.update_layout(dragmode=drag_mode)
     return fig
 
+# -> デンドログラム更新
 @app.callback(
     Output('dendrogram-plot', 'figure'),
     [

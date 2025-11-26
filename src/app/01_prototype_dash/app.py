@@ -154,7 +154,7 @@ if DBC_AVAILABLE:
                         )
                     ])
                 ], className="h-100 d-flex flex-column"), # h-100でRowの高さを継承
-            ], width=2, className="p-2 h-100"), # Colにも h-100 が必要
+            ], width=1, className="p-2 h-100"), # Colにも h-100 が必要
             
             # B: DR View Area (Col: 4)
             dbc.Col([
@@ -180,7 +180,7 @@ if DBC_AVAILABLE:
                     ], className="d-flex flex-column p-3 h-100")
                 # calc(100vh - 40px) は、ビューポート全体からRowの上下のパディングを引いたおおよその高さ
                 ], style={'height': 'calc(100vh - 40px)'}, className="h-100"), 
-            ], width=4, className="p-2 h-100"),
+            ], width=5, className="p-2 h-100"),
             
             # C: Dendrogram Area (Col: 4)
             dbc.Col([
@@ -214,7 +214,7 @@ if DBC_AVAILABLE:
                         dcc.Graph(id='dendrogram-plot', className="flex-grow-1")
                     ], className="d-flex flex-column p-3 h-100")
                 ], style={'height': 'calc(100vh - 40px)'}, className="h-100"),
-            ], width=4, className="p-2 h-100"),
+            ], width=5, className="p-2 h-100"),
             
             # D: Detail & Info Panel (Col: 2)
             dbc.Col([
@@ -237,7 +237,7 @@ if DBC_AVAILABLE:
                         html.Div(id='detail-panel-content', className="mt-3 flex-grow-1 overflow-auto")
                     ], className="d-flex flex-column p-3 h-100")
                 ], style={'height': 'calc(100vh - 40px)'}, className="h-100"),
-            ], width=2, className="p-2 h-100")
+            ], width=1, className="p-2 h-100")
         ], className="g-0 h-100") # Rowのパディング(p-2)が相殺されるように、Rowの外側のマージンをg-0でなくす
     ], fluid=True, className="h-100")
 else:
