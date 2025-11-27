@@ -27,17 +27,13 @@ HIGHLIGHT_COLORS = {
     'default_dimmed': '#B8D4F0',   # 薄い青 - heatmap選択時の背景
     'dr_selection': '#FFA500',     # orange - DR選択時
     'heatmap_click': '#FF0000',    # red - heatmapクリック時
-    'heatmap_to_dr': '#FF1493',   # ディープピンク - heatmapからDRへのハイライト
-    'dendrogram_to_dr': '#32CD32'  # ライムグリーン - デンドログラムからDRへのハイライト
+    'heatmap_to_dr': '#FF1493'     # ディープピンク - heatmapからDRへのハイライト
 }
 
 ###########################################################################
 # Performance Configuration
 ENABLE_HEATMAP_CLUSTER_LIMIT = True  # Heatmapクラスタ数制限の有効/無効
 MAX_HEATMAP_CLUSTERS = 200           # Heatmapで表示可能な最大クラスタ数
-
-# DR Selection Filtering Configuration
-DR_SELECTION_CLUSTER_RATIO_THRESHOLD = 0.1  # DRラッソ選択時のクラスタ含有率閾値（10%未満は除外）
 
 ###########################################################################
 # helpers
@@ -783,13 +779,11 @@ if DBC_AVAILABLE:
     app.layout = dbc.Container([
         # データストア（選択されたクラスタID情報を保持）
         dcc.Store(id='selected-ids-store', data={
-            'dr_selected_clusters': [],         # DRビューで選択されたクラスタ
-            'dr_selected_points': [],           # DRビューで選択されたポイント
-            'heatmap_clicked_clusters': [],     # heatmapビューでクリックされたクラスタ
-            'heatmap_highlight_points': [],     # heatmapクリックによるハイライトポイント
-            'dendrogram_clicked_clusters': [],  # デンドログラムでクリックされたクラスタ
-            'dendrogram_highlight_points': [],  # デンドログラムクリックによるハイライトポイント
-            'last_interaction_type': None       # 'dr_selection' or 'heatmap_click' or 'dendrogram_click'
+            'dr_selected_clusters': [],      # DRビューで選択されたクラスタ
+            'dr_selected_points': [],        # DRビューで選択されたポイント
+            'heatmap_clicked_clusters': [],  # heatmapビューでクリックされたクラスタ
+            'heatmap_highlight_points': [],  # heatmapクリックによるハイライトポイント
+            'last_interaction_type': None    # 'dr_selection' or 'heatmap_click'
         }),
         
         # DRプロットのズーム状態保存用ストア
@@ -1095,19 +1089,16 @@ def update_dr_plot(n_clicks, method, interaction_mode, stored_data, zoom_state):
     if stored_data:
         dr_selected_points = stored_data.get('dr_selected_points', [])
         heatmap_highlight_points = stored_data.get('heatmap_highlight_points', [])
-        dendrogram_highlight_points = stored_data.get('dendrogram_highlight_points', [])
     else:
         dr_selected_points = []
         heatmap_highlight_points = []
-        dendrogram_highlight_points = []
     
     has_dr_selection = len(dr_selected_points) > 0
     has_heatmap_selection = len(heatmap_highlight_points) > 0
-    has_dendrogram_selection = len(dendrogram_highlight_points) > 0
     
-    print(f"DR plot update: {len(dr_selected_points)} DR selected, {len(heatmap_highlight_points)} heatmap highlight, {len(dendrogram_highlight_points)} dendrogram highlight points")
+    print(f"DR plot update: {len(dr_selected_points)} DR selected, {len(heatmap_highlight_points)} heatmap highlight points")
     
-    # 4種類の状態に応じてマーカーの色、サイズ、opacityを設定（優先度順）
+    # 3種類の状態に応じてマーカーの色、サイズ、opacityを設定
     colors = []
     sizes = []
     opacities = []
@@ -1118,17 +1109,12 @@ def update_dr_plot(n_clicks, method, interaction_mode, stored_data, zoom_state):
             colors.append(HIGHLIGHT_COLORS['heatmap_to_dr'])
             sizes.append(6)  # 最大サイズ
             opacities.append(0.95)  # 最高透明度
-        elif i in dendrogram_highlight_points:
-            # デンドログラム選択ハイライト: 2番目の優先度
-            colors.append(HIGHLIGHT_COLORS['dendrogram_to_dr'])
-            sizes.append(5)  # 大サイズ
-            opacities.append(0.9)  # 高透明度
         elif i in dr_selected_points:
-            # DRラッソ選択: 3番目の優先度
+            # DRラッソ選択: 中間的な目立ち方
             colors.append(HIGHLIGHT_COLORS['dr_selection'])
             sizes.append(4)  # 中サイズ
             opacities.append(0.8)  # 中程度の透明度
-        elif has_heatmap_selection or has_dendrogram_selection or has_dr_selection:
+        elif has_heatmap_selection or has_dr_selection:
             # 何らかの選択がある時の背景ポイント: 薄く表示
             colors.append(HIGHLIGHT_COLORS['default_dimmed'])
             sizes.append(1.5)  # 小サイズ
@@ -1145,7 +1131,7 @@ def update_dr_plot(n_clicks, method, interaction_mode, stored_data, zoom_state):
         x='x',
         y='y',
         hover_data=['label'],
-        custom_data=['cluster_label', 'label']  # true_labelとcluster_labelの両方を含める
+        custom_data=['cluster_label']
     )
     
     # マーカーの色、サイズ、opacityを詳細設定
@@ -1161,41 +1147,24 @@ def update_dr_plot(n_clicks, method, interaction_mode, stored_data, zoom_state):
         )
     )
     
-    # cluster_label=-1（ノイズポイント）のホバーを無効化するためのhoverinfoリストを作成
-    hoverinfo_list = []
-    for i in range(len(df)):
-        cluster_label = df.iloc[i]['cluster_label']
-        if cluster_label == -1:
-            hoverinfo_list.append('skip')  # ノイズポイントはホバーをスキップ
-        else:
-            hoverinfo_list.append('all')   # 通常のポイントは全情報を表示
-    
-    # ホバーテンプレートをカスタマイズしてラベル情報と選択状態を表示
-    hover_template = (
-        '<b>True Label: %{customdata[1]}</b><br>'
-        'Cluster Label: %{customdata[0]}<br>'
-        'X: %{x:.4f}<br>'
-        'Y: %{y:.4f}<br>'
-    )
-    
-    # 選択状態がある場合は選択情報も追加
-    if has_dr_selection or has_heatmap_selection or has_dendrogram_selection:
-        hover_template += '<b>Selection Status: %{text}</b><br>'
+    # ホバーテンプレートをカスタマイズして選択状態情報を追加
+    if has_dr_selection or has_heatmap_selection:
+        hover_template = (
+            '<b>%{customdata[0]}</b><br>'
+            'X: %{x:.4f}<br>'
+            'Y: %{y:.4f}<br>'
+            '<b>Selection Status: %{text}</b>'
+            '<extra></extra>'
+        )
         hover_text = []
         for i in range(len(df)):
             if i in heatmap_highlight_points:
                 hover_text.append('Heatmap Highlighted')
-            elif i in dendrogram_highlight_points:
-                hover_text.append('Dendrogram Highlighted')
             elif i in dr_selected_points:
                 hover_text.append('DR Selected')
             else:
                 hover_text.append('Not Selected')
-        hover_template += '<extra></extra>'
-        fig.update_traces(hovertemplate=hover_template, text=hover_text, hoverinfo=hoverinfo_list)
-    else:
-        hover_template += '<extra></extra>'
-        fig.update_traces(hovertemplate=hover_template, hoverinfo=hoverinfo_list)
+        fig.update_traces(hovertemplate=hover_template, text=hover_text)
     
     # レイアウト設定
     title_parts = []
@@ -1203,8 +1172,6 @@ def update_dr_plot(n_clicks, method, interaction_mode, stored_data, zoom_state):
         title_parts.append(f"DR: {len(dr_selected_points)}")
     if has_heatmap_selection:
         title_parts.append(f"Heatmap: {len(heatmap_highlight_points)}")
-    if has_dendrogram_selection:
-        title_parts.append(f"Dendrogram: {len(dendrogram_highlight_points)}")
     
     title_suffix = f" ({', '.join(title_parts)})" if title_parts else ""
     
@@ -1246,13 +1213,12 @@ def update_dr_plot(n_clicks, method, interaction_mode, stored_data, zoom_state):
     Output('selected-ids-store', 'data'),
     [
         Input("dr-visualization-plot", 'selectedData'),
-        Input('cluster-info', 'clickData'),
-        Input('dendrogram-plot', 'clickData')
+        Input('cluster-info', 'clickData')
     ],
     State('selected-ids-store', 'data')
 )
-def update_selected_clusters(selectedData, heatmapClickData, dendrogramClickData, current_state):
-    """DR選択、heatmapクリック、デンドログラムクリックによる選択状態をストアに保存"""
+def update_selected_clusters(selectedData, heatmapClickData, current_state):
+    """DR選択とheatmapクリックによる選択状態をストアに保存"""
     print("update_selected_clusters called")
     
     # 現在の状態を取得（Noneチェック）
@@ -1262,8 +1228,6 @@ def update_selected_clusters(selectedData, heatmapClickData, dendrogramClickData
             'dr_selected_points': [],
             'heatmap_clicked_clusters': [], 
             'heatmap_highlight_points': [],
-            'dendrogram_clicked_clusters': [],
-            'dendrogram_highlight_points': [],
             'last_interaction_type': None
         }
     
@@ -1272,14 +1236,11 @@ def update_selected_clusters(selectedData, heatmapClickData, dendrogramClickData
     dr_selected_points = current_state.get('dr_selected_points', [])
     heatmap_clicked_cluster_ids = current_state.get('heatmap_clicked_clusters', [])
     heatmap_highlight_points = current_state.get('heatmap_highlight_points', [])
-    dendrogram_clicked_clusters = current_state.get('dendrogram_clicked_clusters', [])
-    dendrogram_highlight_points = current_state.get('dendrogram_highlight_points', [])
     last_interaction = current_state.get('last_interaction_type', None)
     
-    # どの入力が変化したかを判定（シンプル版）
+    # どちらの入力が変化したかを判定（シンプル版）
     dr_changed = selectedData is not None and len(selectedData.get('points', [])) > 0
     heatmap_changed = heatmapClickData is not None
-    dendrogram_changed = dendrogramClickData is not None
     
     # DR選択による選択クラスタIDとポイントID取得（既存のheatmap状態を保持）
     if dr_changed and selectedData.get('points'):
@@ -1323,62 +1284,6 @@ def update_selected_clusters(selectedData, heatmapClickData, dendrogramClickData
         except Exception as e:
             print(f"Error processing heatmap click: {e}")
     
-    # デンドログラムクリックによる選択クラスタID取得（既存のDR・heatmap状態を保持）
-    if dendrogram_changed:
-        print(f"Dendrogram click detected")
-        try:
-            # クリックデータの詳細情報をデバッグ出力
-            click_point = dendrogramClickData['points'][0]
-            print(f"Full dendrogram click data: {click_point}")
-            
-            clicked_x = click_point['x']
-            clicked_y = click_point['y']
-            
-            # curveNumber（トレース番号）から線分インデックスを取得
-            curve_number = click_point.get('curveNumber', None)
-            point_number = click_point.get('pointNumber', None)
-            
-            print(f"Dendrogram clicked - x={clicked_x}, y={clicked_y}, curve={curve_number}, point={point_number}")
-            
-            # curveNumberがセグメント（線分）のインデックスに対応
-            if curve_number is not None:
-                segment_index = curve_number
-                cluster_index = segment_index // 3  # 3つのセグメントごとに1つのクラスタ
-                
-                print(f"Segment index: {segment_index}, Cluster index: {cluster_index}")
-                
-                # linkage_matrixから対応するクラスタ情報を取得
-                if cluster_index < len(linkage_matrix):
-                    linkage_row = linkage_matrix[cluster_index]
-                    parent_cluster_id = int(linkage_row[2])  # parent cluster ID
-                    
-                    # new_old_id_mapで元のクラスタIDに変換
-                    if parent_cluster_id in new_old_id_map:
-                        original_cluster_id = new_old_id_map[parent_cluster_id]
-                        new_dendrogram_clusters = [original_cluster_id]
-                        
-                        print(f"Linkage row {cluster_index}: {linkage_row}")
-                        print(f"Parent cluster {parent_cluster_id} -> Original cluster {original_cluster_id}")
-                        
-                        if new_dendrogram_clusters != dendrogram_clicked_clusters:
-                            dendrogram_clicked_clusters = new_dendrogram_clusters
-                            last_interaction = 'dendrogram_click'
-                            print(f"Dendrogram clicked cluster IDs: {dendrogram_clicked_clusters}")
-                            print(f"Preserving existing DR and Heatmap selections")
-                        else:
-                            print("Dendrogram click unchanged, skipping update")
-                    else:
-                        print(f"Parent cluster {parent_cluster_id} not found in new_old_id_map")
-                else:
-                    print(f"Cluster index {cluster_index} out of range (max: {len(linkage_matrix)-1})")
-            else:
-                print("No curveNumber found in click data")
-                
-        except Exception as e:
-            print(f"Error processing dendrogram click: {e}")
-            import traceback
-            traceback.print_exc()
-    
     # heatmapクリック時のハイライト対象ポイントIDを計算（最適化版）
     if heatmap_clicked_cluster_ids:
         # パフォーマンス最適化: setで高速検索
@@ -1388,22 +1293,12 @@ def update_selected_clusters(selectedData, heatmapClickData, dendrogramClickData
     else:
         heatmap_highlight_points = []
     
-    # デンドログラムクリック時のハイライト対象ポイントIDを計算
-    if dendrogram_clicked_clusters:
-        cluster_set = set(dendrogram_clicked_clusters)
-        dendrogram_highlight_points = [pid for pid, cid in point_cluster_map.items() if cid in cluster_set]
-        print(f"Dendrogram highlight points: {len(dendrogram_highlight_points)} points from clusters {dendrogram_clicked_clusters}")
-    else:
-        dendrogram_highlight_points = []
-    
     # 結果を構築
     result = {
         'dr_selected_clusters': dr_selected_clusters,
         'dr_selected_points': dr_selected_points,
         'heatmap_clicked_clusters': heatmap_clicked_cluster_ids,
         'heatmap_highlight_points': heatmap_highlight_points,
-        'dendrogram_clicked_clusters': dendrogram_clicked_clusters,
-        'dendrogram_highlight_points': dendrogram_highlight_points,
         'last_interaction_type': last_interaction
     }
     
@@ -1412,12 +1307,11 @@ def update_selected_clusters(selectedData, heatmapClickData, dendrogramClickData
         current_state.get('dr_selected_clusters') == dr_selected_clusters and
         current_state.get('dr_selected_points') == dr_selected_points and
         current_state.get('heatmap_clicked_clusters') == heatmap_clicked_cluster_ids and
-        current_state.get('dendrogram_clicked_clusters') == dendrogram_clicked_clusters and
         current_state.get('last_interaction_type') == last_interaction):
         print("No changes detected, returning current state")
         return current_state
     
-    print(f"Store updated: DR({len(dr_selected_clusters)} clusters, {len(dr_selected_points)} points), Heatmap({len(heatmap_clicked_cluster_ids)} clusters, {len(heatmap_highlight_points)} points), Dendrogram({len(dendrogram_clicked_clusters)} clusters, {len(dendrogram_highlight_points)} points), last_interaction: {last_interaction}")
+    print(f"Store updated: DR({len(dr_selected_clusters)} clusters, {len(dr_selected_points)} points), Heatmap({len(heatmap_clicked_cluster_ids)} clusters, {len(heatmap_highlight_points)} points), last_interaction: {last_interaction}")
     
     return result
 
@@ -1685,71 +1579,27 @@ def update_cluster_info(stored_data, reverse_colorscale_options, cluster_reorder
 def update_detail_panel(active_tab, click_data, stored_data):
     """詳細パネルの内容を更新"""
     
-    # 選択されたクラスタ情報を取得（新しいフィールド名に対応）
-    dr_selected_clusters = stored_data.get('dr_selected_clusters', [])
-    dr_selected_points = stored_data.get('dr_selected_points', [])
-    heatmap_clicked_clusters = stored_data.get('heatmap_clicked_clusters', [])
-    dendrogram_clicked_clusters = stored_data.get('dendrogram_clicked_clusters', [])
-    last_interaction = stored_data.get('last_interaction_type', None)
-    
+    # 選択されたクラスタ情報を取得
+    selected_cluster_ids = stored_data.get('selected_clusters', [])
     selected_cluster_info = []
     
-    # DR選択がある場合のクラスタ分析
-    if dr_selected_clusters and dr_selected_points:
-        print(f"Analyzing DR selection: {len(dr_selected_clusters)} clusters, {len(dr_selected_points)} points")
-        
-        # 各クラスタの含有率を計算
-        for cluster_id in dr_selected_clusters:
+    if selected_cluster_ids:
+        # クラスタ情報を収集
+        for cluster_id in selected_cluster_ids:
             cluster_points = [pid for pid, cid in point_cluster_map.items() if cid == cluster_id]
+            stability_score = stability_dict.get(cluster_id, 0.0)
+            
+            # 選択された点数の情報は簡単に取得できないため、とりあえず全点数で代用
             total_cluster_points = len(cluster_points)
-            selected_points_in_cluster = len([pid for pid in dr_selected_points if pid in cluster_points])
-            selection_ratio = selected_points_in_cluster / total_cluster_points if total_cluster_points > 0 else 0
-            
-            # 閾値フィルタリング
-            if selection_ratio >= DR_SELECTION_CLUSTER_RATIO_THRESHOLD:
-                stability_score = stability_dict.get(cluster_id, 0.0)
-                
-                selected_cluster_info.append({
-                    'cluster_id': cluster_id,
-                    'point_count': total_cluster_points,
-                    'selected_points': selected_points_in_cluster,
-                    'selection_ratio': selection_ratio,
-                    'stability': stability_score,
-                    'sample_points': cluster_points[:5]  # 最初の5点のみ表示
-                })
-            else:
-                print(f"Cluster {cluster_id} filtered out: ratio {selection_ratio:.3f} < threshold {DR_SELECTION_CLUSTER_RATIO_THRESHOLD}")
-        
-        # 選択率とStabilityでソート
-        selected_cluster_info.sort(key=lambda x: (x['selection_ratio'], x['stability']), reverse=True)
-    
-    # その他の選択タイプ（Heatmap、Dendrogram）の処理
-    elif heatmap_clicked_clusters:
-        for cluster_id in heatmap_clicked_clusters:
-            cluster_points = [pid for pid, cid in point_cluster_map.items() if cid == cluster_id]
-            stability_score = stability_dict.get(cluster_id, 0.0)
+            selected_cluster_points = total_cluster_points  # 簡略化: 選択されたクラスタは全点が選択されたとみなす
             
             selected_cluster_info.append({
                 'cluster_id': cluster_id,
-                'point_count': len(cluster_points),
-                'selected_points': len(cluster_points),
-                'selection_ratio': 1.0,
+                'point_count': total_cluster_points,
+                'selected_points': selected_cluster_points,
+                'selection_ratio': 1.0,  # 簡略化: 選択されたクラスタは100%とする
                 'stability': stability_score,
-                'sample_points': cluster_points[:5]
-            })
-    
-    elif dendrogram_clicked_clusters:
-        for cluster_id in dendrogram_clicked_clusters:
-            cluster_points = [pid for pid, cid in point_cluster_map.items() if cid == cluster_id]
-            stability_score = stability_dict.get(cluster_id, 0.0)
-            
-            selected_cluster_info.append({
-                'cluster_id': cluster_id,
-                'point_count': len(cluster_points),
-                'selected_points': len(cluster_points),
-                'selection_ratio': 1.0,
-                'stability': stability_score,
-                'sample_points': cluster_points[:5]
+                'sample_points': cluster_points[:5]  # 最初の5点のみ表示
             })
         
         # Stabilityでソート
@@ -1779,10 +1629,10 @@ def update_detail_panel(active_tab, click_data, stored_data):
             ])
     
     elif active_tab == 'tab-selection-stats':
-        if selected_cluster_info:
+        if selected_cluster_ids:
             # 選択されたクラスタの総ポイント数を計算
             n_selected_points = sum(info['point_count'] for info in selected_cluster_info)
-            n_selected_clusters = len(selected_cluster_info)
+            n_selected_clusters = len(selected_cluster_ids)
             
             # クラスタ一覧テーブル
             cluster_table_data = []
@@ -1864,11 +1714,8 @@ def update_detail_panel(active_tab, click_data, stored_data):
             f"2024-11-16 10:30:30 - Point-to-cluster mapping: {len(point_cluster_map)} points"
         ]
         
-        if selected_cluster_info:
-            cluster_ids = [info['cluster_id'] for info in selected_cluster_info]
-            log_entries.append(f"2024-11-16 10:30:35 - Selected clusters: {cluster_ids[:5]}{'...' if len(cluster_ids) > 5 else ''}")
-            log_entries.append(f"2024-11-16 10:30:36 - Selection type: {last_interaction or 'None'}")
-            log_entries.append(f"2024-11-16 10:30:37 - Ratio threshold: {DR_SELECTION_CLUSTER_RATIO_THRESHOLD}")
+        if selected_cluster_ids:
+            log_entries.append(f"2024-11-16 10:30:35 - Selected clusters: {selected_cluster_ids[:5]}{'...' if len(selected_cluster_ids) > 5 else ''}")
         
         return html.Div([
             html.H6("System Log", className="fw-bold mb-3"),

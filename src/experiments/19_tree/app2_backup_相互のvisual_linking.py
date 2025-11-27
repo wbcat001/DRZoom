@@ -36,9 +36,6 @@ HIGHLIGHT_COLORS = {
 ENABLE_HEATMAP_CLUSTER_LIMIT = True  # Heatmapクラスタ数制限の有効/無効
 MAX_HEATMAP_CLUSTERS = 200           # Heatmapで表示可能な最大クラスタ数
 
-# DR Selection Filtering Configuration
-DR_SELECTION_CLUSTER_RATIO_THRESHOLD = 0.1  # DRラッソ選択時のクラスタ含有率閾値（10%未満は除外）
-
 ###########################################################################
 # helpers
 def _get_leaves(condensed_tree):
@@ -1161,15 +1158,6 @@ def update_dr_plot(n_clicks, method, interaction_mode, stored_data, zoom_state):
         )
     )
     
-    # cluster_label=-1（ノイズポイント）のホバーを無効化するためのhoverinfoリストを作成
-    hoverinfo_list = []
-    for i in range(len(df)):
-        cluster_label = df.iloc[i]['cluster_label']
-        if cluster_label == -1:
-            hoverinfo_list.append('skip')  # ノイズポイントはホバーをスキップ
-        else:
-            hoverinfo_list.append('all')   # 通常のポイントは全情報を表示
-    
     # ホバーテンプレートをカスタマイズしてラベル情報と選択状態を表示
     hover_template = (
         '<b>True Label: %{customdata[1]}</b><br>'
@@ -1192,10 +1180,10 @@ def update_dr_plot(n_clicks, method, interaction_mode, stored_data, zoom_state):
             else:
                 hover_text.append('Not Selected')
         hover_template += '<extra></extra>'
-        fig.update_traces(hovertemplate=hover_template, text=hover_text, hoverinfo=hoverinfo_list)
+        fig.update_traces(hovertemplate=hover_template, text=hover_text)
     else:
         hover_template += '<extra></extra>'
-        fig.update_traces(hovertemplate=hover_template, hoverinfo=hoverinfo_list)
+        fig.update_traces(hovertemplate=hover_template)
     
     # レイアウト設定
     title_parts = []
@@ -1685,71 +1673,27 @@ def update_cluster_info(stored_data, reverse_colorscale_options, cluster_reorder
 def update_detail_panel(active_tab, click_data, stored_data):
     """詳細パネルの内容を更新"""
     
-    # 選択されたクラスタ情報を取得（新しいフィールド名に対応）
-    dr_selected_clusters = stored_data.get('dr_selected_clusters', [])
-    dr_selected_points = stored_data.get('dr_selected_points', [])
-    heatmap_clicked_clusters = stored_data.get('heatmap_clicked_clusters', [])
-    dendrogram_clicked_clusters = stored_data.get('dendrogram_clicked_clusters', [])
-    last_interaction = stored_data.get('last_interaction_type', None)
-    
+    # 選択されたクラスタ情報を取得
+    selected_cluster_ids = stored_data.get('selected_clusters', [])
     selected_cluster_info = []
     
-    # DR選択がある場合のクラスタ分析
-    if dr_selected_clusters and dr_selected_points:
-        print(f"Analyzing DR selection: {len(dr_selected_clusters)} clusters, {len(dr_selected_points)} points")
-        
-        # 各クラスタの含有率を計算
-        for cluster_id in dr_selected_clusters:
+    if selected_cluster_ids:
+        # クラスタ情報を収集
+        for cluster_id in selected_cluster_ids:
             cluster_points = [pid for pid, cid in point_cluster_map.items() if cid == cluster_id]
+            stability_score = stability_dict.get(cluster_id, 0.0)
+            
+            # 選択された点数の情報は簡単に取得できないため、とりあえず全点数で代用
             total_cluster_points = len(cluster_points)
-            selected_points_in_cluster = len([pid for pid in dr_selected_points if pid in cluster_points])
-            selection_ratio = selected_points_in_cluster / total_cluster_points if total_cluster_points > 0 else 0
-            
-            # 閾値フィルタリング
-            if selection_ratio >= DR_SELECTION_CLUSTER_RATIO_THRESHOLD:
-                stability_score = stability_dict.get(cluster_id, 0.0)
-                
-                selected_cluster_info.append({
-                    'cluster_id': cluster_id,
-                    'point_count': total_cluster_points,
-                    'selected_points': selected_points_in_cluster,
-                    'selection_ratio': selection_ratio,
-                    'stability': stability_score,
-                    'sample_points': cluster_points[:5]  # 最初の5点のみ表示
-                })
-            else:
-                print(f"Cluster {cluster_id} filtered out: ratio {selection_ratio:.3f} < threshold {DR_SELECTION_CLUSTER_RATIO_THRESHOLD}")
-        
-        # 選択率とStabilityでソート
-        selected_cluster_info.sort(key=lambda x: (x['selection_ratio'], x['stability']), reverse=True)
-    
-    # その他の選択タイプ（Heatmap、Dendrogram）の処理
-    elif heatmap_clicked_clusters:
-        for cluster_id in heatmap_clicked_clusters:
-            cluster_points = [pid for pid, cid in point_cluster_map.items() if cid == cluster_id]
-            stability_score = stability_dict.get(cluster_id, 0.0)
+            selected_cluster_points = total_cluster_points  # 簡略化: 選択されたクラスタは全点が選択されたとみなす
             
             selected_cluster_info.append({
                 'cluster_id': cluster_id,
-                'point_count': len(cluster_points),
-                'selected_points': len(cluster_points),
-                'selection_ratio': 1.0,
+                'point_count': total_cluster_points,
+                'selected_points': selected_cluster_points,
+                'selection_ratio': 1.0,  # 簡略化: 選択されたクラスタは100%とする
                 'stability': stability_score,
-                'sample_points': cluster_points[:5]
-            })
-    
-    elif dendrogram_clicked_clusters:
-        for cluster_id in dendrogram_clicked_clusters:
-            cluster_points = [pid for pid, cid in point_cluster_map.items() if cid == cluster_id]
-            stability_score = stability_dict.get(cluster_id, 0.0)
-            
-            selected_cluster_info.append({
-                'cluster_id': cluster_id,
-                'point_count': len(cluster_points),
-                'selected_points': len(cluster_points),
-                'selection_ratio': 1.0,
-                'stability': stability_score,
-                'sample_points': cluster_points[:5]
+                'sample_points': cluster_points[:5]  # 最初の5点のみ表示
             })
         
         # Stabilityでソート
@@ -1779,10 +1723,10 @@ def update_detail_panel(active_tab, click_data, stored_data):
             ])
     
     elif active_tab == 'tab-selection-stats':
-        if selected_cluster_info:
+        if selected_cluster_ids:
             # 選択されたクラスタの総ポイント数を計算
             n_selected_points = sum(info['point_count'] for info in selected_cluster_info)
-            n_selected_clusters = len(selected_cluster_info)
+            n_selected_clusters = len(selected_cluster_ids)
             
             # クラスタ一覧テーブル
             cluster_table_data = []
@@ -1864,11 +1808,8 @@ def update_detail_panel(active_tab, click_data, stored_data):
             f"2024-11-16 10:30:30 - Point-to-cluster mapping: {len(point_cluster_map)} points"
         ]
         
-        if selected_cluster_info:
-            cluster_ids = [info['cluster_id'] for info in selected_cluster_info]
-            log_entries.append(f"2024-11-16 10:30:35 - Selected clusters: {cluster_ids[:5]}{'...' if len(cluster_ids) > 5 else ''}")
-            log_entries.append(f"2024-11-16 10:30:36 - Selection type: {last_interaction or 'None'}")
-            log_entries.append(f"2024-11-16 10:30:37 - Ratio threshold: {DR_SELECTION_CLUSTER_RATIO_THRESHOLD}")
+        if selected_cluster_ids:
+            log_entries.append(f"2024-11-16 10:30:35 - Selected clusters: {selected_cluster_ids[:5]}{'...' if len(selected_cluster_ids) > 5 else ''}")
         
         return html.Div([
             html.H6("System Log", className="fw-bold mb-3"),
