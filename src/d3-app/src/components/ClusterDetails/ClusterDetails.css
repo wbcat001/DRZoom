@@ -1,0 +1,167 @@
+.cluster-selector {
+  margin-bottom: 16px;
+}
+
+.cluster-selector label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  background: white;
+}
+
+.cluster-info {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cluster-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.cluster-color-indicator {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 2px solid white;
+  box-shadow: 0 0 0 1px #ccc;
+}
+
+.cluster-header h4 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.cluster-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #666;
+}
+
+.stat-value {
+  font-size: 14px;
+  color: #333;
+  font-family: monospace;
+}
+
+.stat-value.description {
+  font-family: inherit;
+  font-style: italic;
+  color: #555;
+}
+
+.stability-bar {
+  width: 100%;
+  height: 4px;
+  background: #eee;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.stability-fill {
+  height: 100%;
+  background: linear-gradient(to right, #ff4444, #ffaa00, #44ff44);
+  transition: width 0.3s ease;
+}
+
+.sample-points h5,
+.cluster-metrics h5 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.points-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.point-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.point-color {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.point-coords {
+  margin-left: auto;
+  font-family: monospace;
+  color: #666;
+}
+
+.more-points {
+  padding: 8px;
+  text-align: center;
+  font-style: italic;
+  color: #666;
+  font-size: 12px;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.metric-card {
+  background: #f8f9fa;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  padding: 8px;
+  text-align: center;
+}
+
+.metric-name {
+  font-size: 11px;
+  font-weight: 500;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.metric-value {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  font-family: monospace;
+}

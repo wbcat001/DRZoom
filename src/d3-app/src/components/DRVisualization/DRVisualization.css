@@ -1,0 +1,48 @@
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.header-content h4 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.interaction-controls {
+  display: flex;
+  gap: 12px;
+}
+
+.mode-toggle {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.mode-toggle input[type="radio"] {
+  margin-right: 4px;
+}
+
+.dr-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.data-point {
+  cursor: pointer;
+}
+
+.data-point.selected {
+  stroke: #ff6b35;
+  stroke-width: 2px;
+}
+
+.brush-layer .selection {
+  stroke: #007bff;
+  stroke-width: 1px;
+  fill: rgba(0, 123, 255, 0.1);
+}

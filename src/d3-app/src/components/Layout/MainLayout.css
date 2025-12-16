@@ -1,0 +1,100 @@
+/* メインコンテナ - CSS Gridレイアウト */
+.main-container {
+  display: grid;
+  grid-template-rows: 1fr 400px; /* 上段: 可変, 下段: 400px固定 */
+  height: 100vh;
+  gap: 8px;
+  padding: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: #f5f5f5;
+}
+
+/* 上段レイアウト - 4パネル */
+.top-row {
+  display: grid;
+  grid-template-columns: 2fr 4fr 4fr 2fr; /* A:2, B:4, C:4, D:2 */
+  gap: 8px;
+  min-height: 0; /* グリッドアイテムの縮小を許可 */
+}
+
+/* 下段レイアウト - 2パネル */
+.bottom-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* E1:50%, E2:50% */
+  gap: 8px;
+  height: 400px;
+}
+
+/* 各エリアの基本スタイル */
+.control-panel-area,
+.dr-visualization-area,
+.dendrogram-area,
+.details-panel-area,
+.cluster-heatmap-area,
+.cluster-details-area {
+  display: flex;
+  flex-direction: column;
+}
+
+/* パネルの共通スタイル */
+.panel {
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+}
+
+.panel-header {
+  background: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.panel-content {
+  flex: 1;
+  padding: 16px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* レスポンシブデザイン */
+/* Tablet (768px - 1024px) */
+@media screen and (max-width: 1024px) {
+  .top-row {
+    grid-template-columns: 1fr; /* 縦積みレイアウト */
+    grid-template-rows: auto auto auto auto;
+  }
+  
+  .bottom-row {
+    grid-template-columns: 1fr; /* 縦積みレイアウト */
+    grid-template-rows: 200px 200px;
+    height: 400px;
+  }
+}
+
+/* Mobile (< 768px) */
+@media screen and (max-width: 768px) {
+  .main-container {
+    grid-template-rows: auto; /* 高さ自動調整 */
+    height: auto;
+    min-height: 100vh;
+  }
+  
+  .panel {
+    min-height: 300px; /* 最小高さ確保 */
+  }
+  
+  .panel-header {
+    font-size: 14px;
+    padding: 8px 12px;
+  }
+}
