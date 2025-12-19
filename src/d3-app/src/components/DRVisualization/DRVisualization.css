@@ -32,6 +32,23 @@
   display: block;
 }
 
+.dr-visualization-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.dr-plot {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.panel-content > .dr-plot {
+  width: 100%;
+  height: 100%;
+}
+
 .data-point {
   cursor: pointer;
 }

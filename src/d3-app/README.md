@@ -1,4 +1,63 @@
-# React + TypeScript + Vite
+# D3 App - HDBSCAN Cluster Explorer
+
+D3.js-based interactive visualization tool for exploring HDBSCAN clustering results with dimensionality reduction embeddings.
+
+## Quick Start
+
+### 1. Install Dependencies
+
+```bash
+npm install
+```
+
+### 2. Start Backend (Python FastAPI)
+
+```bash
+# Windows
+run_backend.bat
+
+# Linux/Mac
+./run_backend.sh
+
+# Or manually
+cd src/backend
+uvicorn main_d3:app --reload --port 8000
+```
+
+### 3. Start Frontend (Vite Dev Server)
+
+```bash
+npm run dev
+```
+
+### 4. Open Browser
+
+Navigate to `http://localhost:5173`
+
+## Project Structure
+
+```
+d3-app/
+├── src/
+│   ├── backend/              # Python FastAPI backend
+│   │   ├── main_d3.py       # API endpoints
+│   │   └── services/        # Data processing
+│   ├── api/                 # Frontend API client
+│   ├── components/          # React components
+│   ├── store/               # State management (Context API)
+│   ├── types/               # TypeScript types
+│   └── utils/               # Utility functions
+├── .env.local               # Environment variables
+└── DATA_CONFIGURATION.md    # Data setup guide
+```
+
+## Configuration
+
+See [DATA_CONFIGURATION.md](DATA_CONFIGURATION.md) for data setup instructions.
+
+---
+
+## React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

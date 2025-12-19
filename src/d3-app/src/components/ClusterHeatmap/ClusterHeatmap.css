@@ -3,17 +3,22 @@
   justify-content: space-between;
   align-items: center;
   width: 100%;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eee;
 }
 
 .heatmap-header h4 {
   margin: 0;
-  font-size: 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
 }
 
 .heatmap-controls {
   display: flex;
   gap: 12px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .metric-select {
@@ -22,6 +27,22 @@
   border-radius: 4px;
   font-size: 12px;
   background: white;
+  cursor: pointer;
+  transition: border-color 0.2s;
+.cluster-heatmap-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+}
+
+.metric-select:hover {
+  border-color: #999;
+}
+
+.metric-select:focus {
+  outline: none;
+  border-color: #666;
 }
 
 .reverse-label {
@@ -29,27 +50,108 @@
   align-items: center;
   font-size: 12px;
   cursor: pointer;
+  user-select: none;
 }
 
 .reverse-label input {
   margin-right: 4px;
+  cursor: pointer;
+}
+
+.heatmap-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  position: relative;
+}
+
+.panel-content > .heatmap-plot {
+  width: 100%;
+  height: 100%;
 }
 
 .heatmap-svg {
   width: 100%;
   height: 100%;
   display: block;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
 }
 
 .heatmap-cell {
-  transition: stroke-width 0.2s;
+  transition: stroke-width 0.2s, opacity 0.2s;
+  stroke: #fff;
+  stroke-width: 0.5px;
+  cursor: pointer;
+}
+
+.heatmap-cell:hover {
+  stroke-width: 2px;
+  filter: brightness(1.2);
+}
+
+.heatmap-cell.selected {
+  stroke-width: 2px;
+  stroke: #ff6b6b;
 }
 
 .x-label, .y-label {
+  fill: #666;
+  font-size: 11px;
+  user-select: none;
+}
+
+.x-label:hover, .y-label:hover {
   fill: #333;
+  font-weight: 500;
+}
+
+.axis-label {
+  fill: #999;
+  font-size: 10px;
+}
+
+/* Loading state */
+.heatmap-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  color: #999;
+  font-size: 12px;
+}
+
+.heatmap-empty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  color: #ccc;
+  font-size: 12px;
+  text-align: center;
 }
 
 /* Tooltip styles */
 .tooltip {
+  position: absolute;
   z-index: 1000;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.tooltip::before {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 4px solid rgba(0, 0, 0, 0.8);
 }

@@ -1,52 +1,11 @@
-export interface Point {
-  id: number;
-  x: number;
-  y: number;
-  cluster: number;
-  label?: string;
-}
+/**
+ * Export all types from types module
+ */
 
-export interface Cluster {
-  id: number;
-  size: number;
-  color: string;
-  stability: number;
-}
-
-export interface DendrogramNode {
-  id: string;
-  x: number;
-  y: number;
-  children?: DendrogramNode[];
-  size?: number;
-  highlighted?: boolean;
-}
-
-export interface DendrogramLink {
-  source: DendrogramNode;
-  target: DendrogramNode;
-  weight?: number;
-}
-
-export interface AppState {
-  selectedClusters: number[];
-  selectedPoints: number[];
-  heatmapClickedClusters: number[];
-  dendrogramClickedClusters: number[];
-  lastInteractionType: string | null;
-  drZoomState: { x: [number, number]; y: [number, number] };
-  parameters: {
-    drMethod: 'UMAP' | 'TSNE' | 'PCA';
-    umapParams: { n_neighbors: number; min_dist: number };
-    tsneParams: { perplexity: number };
-    pcaParams: { n_components: number };
-  };
-}
-
-export interface SimilarityData {
-  clusters: Cluster[];
-  similarities: number[][];
-}
+export * from './data';
+export * from './api';
+export * from './color';
+export * from './state';
 
 export type InteractionMode = 'brush' | 'zoom';
 export type TabType = 'point-details' | 'selection-stats' | 'cluster-size' | 'system-log';

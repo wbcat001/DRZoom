@@ -1,25 +1,47 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as d3 from 'd3';
-import type { InteractionMode } from '../../types';
+import { useAppContext, useSelection, useData } from '../../store/useAppStore.tsx';
+import { Point } from '../../types';
+import { determinePointHighlight, isAnySelectionActive, createScaleFactors } from '../../utils';
+import { getElementStyle } from '../../types/color';
 import './DRVisualization.css';
 
 const DRVisualization: React.FC = () => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [interactionMode, setInteractionMode] = useState<InteractionMode>('zoom');
+  const { state } = useAppContext();
+  const { selection, selectClusters } = useSelection();
+  const { data } = useData();
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
+  const margin = { top: 20, right: 20, bottom: 40, left: 40 };
+
+  // Update dimensions on container resize
   useEffect(() => {
-    if (!svgRef.current || !containerRef.current) return;
+    if (!containerRef.current) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (rect) {
+        setDimensions({
+          width: rect.width - margin.left - margin.right,
+          height: rect.height - margin.top - margin.bottom
+        });
+      }
+    });
+
+    resizeObserver.observe(containerRef.current);
+    return () => resizeObserver.disconnect();
+  }, []);
+
+  // Main D3 rendering logic
+  useEffect(() => {
+    if (!svgRef.current || !containerRef.current || data.points.length === 0) return;
 
     const svg = d3.select(svgRef.current);
     const container = containerRef.current;
-    
-    // Clear previous content
-    svg.selectAll('*').remove();
 
-    // Get container dimensions
     const rect = container.getBoundingClientRect();
-    const margin = { top: 20, right: 20, bottom: 40, left: 40 };
     const width = rect.width - margin.left - margin.right;
     const height = rect.height - margin.top - margin.bottom;
 
@@ -28,108 +50,98 @@ const DRVisualization: React.FC = () => {
       .attr('width', rect.width)
       .attr('height', rect.height);
 
+    // Remove existing content
+    svg.selectAll('g').remove();
+
+    // Create scales
+    const scaleFactors = createScaleFactors(data.points, width, height, 0);
+
     // Create main group
     const g = svg.append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
-    // Sample data for demo
-    const sampleData = Array.from({ length: 100 }, (_, i) => ({
-      id: i,
-      x: Math.random() * width,
-      y: Math.random() * height,
-      cluster: Math.floor(Math.random() * 5)
-    }));
+    // Add background
+    g.append('rect')
+      .attr('width', width)
+      .attr('height', height)
+      .attr('fill', '#f8f9fa')
+      .attr('pointer-events', 'all');
 
-    // Color scale
-    const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+    // Color scale for clusters
+    const clusterIds = Array.from(new Set(data.points.map((p) => p.c)));
+    const colorScale = d3.scaleOrdinal()
+      .domain(clusterIds.map((id) => id.toString()))
+      .range(d3.schemeCategory10);
+
+    // Check if any selection is active
+    const anySelectionActive = isAnySelectionActive(
+      selection.selectedClusterIds,
+      selection.selectedPointIds,
+      selection.heatmapClickedClusters,
+      selection.dendrogramHoveredCluster
+    );
 
     // Draw points
     g.selectAll('.data-point')
-      .data(sampleData)
+      .data(data.points, (d: any) => d.i)
       .enter()
       .append('circle')
       .attr('class', 'data-point')
-      .attr('cx', d => d.x)
-      .attr('cy', d => d.y)
+      .attr('cx', (d) => scaleFactors.xScale(d.x))
+      .attr('cy', (d) => scaleFactors.yScale(d.y))
       .attr('r', 3)
-      .style('fill', d => colorScale(d.cluster.toString()))
-      .style('stroke', 'white')
-      .style('stroke-width', 1)
-      .on('mouseover', function() {
-        d3.select(this).attr('r', 5);
+      .attr('fill', (d) => {
+        const highlight = determinePointHighlight(
+          d.i,
+          d,
+          selection.selectedClusterIds,
+          selection.selectedPointIds,
+          selection.heatmapClickedClusters,
+          selection.dendrogramHoveredCluster
+        );
+        const anyActive = isAnySelectionActive(
+          selection.selectedClusterIds,
+          selection.selectedPointIds,
+          selection.heatmapClickedClusters,
+          selection.dendrogramHoveredCluster
+        );
+        const style = getElementStyle(highlight, anyActive);
+        return (style.fill || colorScale(d.c.toString())) as string;
       })
-      .on('mouseout', function() {
-        d3.select(this).attr('r', 3);
+      .attr('opacity', (d) => {
+        const highlight = determinePointHighlight(
+          d.i,
+          d,
+          selection.selectedClusterIds,
+          selection.selectedPointIds,
+          selection.heatmapClickedClusters,
+          selection.dendrogramHoveredCluster
+        );
+        const style = getElementStyle(highlight, anySelectionActive);
+        return style.opacity || 1.0;
+      })
+      .on('mouseover', function (event, d) {
+        d3.select(this).attr('r', 5).attr('stroke', '#333').attr('stroke-width', 1);
+      })
+      .on('mouseout', function () {
+        d3.select(this).attr('r', 3).attr('stroke-width', 0);
       });
 
-    // Setup zoom behavior
-    const zoom = d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.1, 10])
+    // Add zoom behavior
+    const zoom = d3.zoom<SVGGElement, unknown>()
       .on('zoom', (event) => {
-        g.attr('transform', `translate(${margin.left + event.transform.x},${margin.top + event.transform.y}) scale(${event.transform.k})`);
+        g.attr('transform', event.transform);
       });
 
-    // Setup brush behavior
-    const brush = d3.brush()
-      .on('start brush end', (event) => {
-        if (!event.sourceEvent) return;
-        const selection = event.selection;
-        if (selection) {
-          // Handle brush selection
-          g.selectAll('.data-point')
-            .classed('selected', (d: any) => {
-              const [x0, y0] = selection[0];
-              const [x1, y1] = selection[1];
-              return d.x >= x0 && d.x <= x1 && d.y >= y0 && d.y <= y1;
-            });
-        }
-      });
+    svg.call(zoom as any);
 
-    // Apply interaction mode
-    if (interactionMode === 'zoom') {
-      svg.call(zoom);
-      svg.select('.brush-layer').remove();
-    } else {
-      svg.on('.zoom', null);
-      svg.append('g')
-        .attr('class', 'brush-layer')
-        .call(brush);
-    }
-
-  }, [interactionMode]);
+  }, [data.points, selection, margin]);
 
   return (
-    <div className="panel">
-      <div className="panel-header">
-        <div className="header-content">
-          <h4>DR Visualization</h4>
-          <div className="interaction-controls">
-            <label className="mode-toggle">
-              <input
-                type="radio"
-                name="interaction-mode"
-                value="brush"
-                checked={interactionMode === 'brush'}
-                onChange={() => setInteractionMode('brush')}
-              />
-              <span>Brush Selection</span>
-            </label>
-            <label className="mode-toggle">
-              <input
-                type="radio"
-                name="interaction-mode"
-                value="zoom"
-                checked={interactionMode === 'zoom'}
-                onChange={() => setInteractionMode('zoom')}
-              />
-              <span>Zoom/Pan</span>
-            </label>
-          </div>
-        </div>
-      </div>
-      
-      <div className="panel-content" ref={containerRef}>
-        <svg ref={svgRef} className="dr-svg"></svg>
+    <div ref={containerRef} className="panel dr-visualization-container">
+      <div className="panel-header">DR Visualization</div>
+      <div className="panel-content">
+        <svg ref={svgRef} className="dr-plot" />
       </div>
     </div>
   );
