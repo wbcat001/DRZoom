@@ -13,6 +13,7 @@ const DRVisualization: React.FC = () => {
   const { data } = useData();
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [interactionMode, setInteractionMode] = useState<'point' | 'cluster'>('point');
+  const [ignoreNoise, setIgnoreNoise] = useState<boolean>(true);
   const [tooltip, setTooltip] = useState<{
     visible: boolean;
     x: number;
@@ -88,14 +89,14 @@ const DRVisualization: React.FC = () => {
     );
 
     // Draw points
-    g.selectAll('.data-point')
+    const circles = g.selectAll('.data-point')
       .data(data.points, (d: any) => d.i)
       .enter()
       .append('circle')
       .attr('class', 'data-point')
       .attr('cx', (d) => scaleFactors.xScale(d.x))
       .attr('cy', (d) => scaleFactors.yScale(d.y))
-      .attr('r', 3)
+      .attr('r', 1)
       .attr('fill', (d) => {
         const highlight = determinePointHighlight(
           d.i,
@@ -126,7 +127,9 @@ const DRVisualization: React.FC = () => {
         const style = getElementStyle(highlight, anySelectionActive);
         return style.opacity || 1.0;
       })
+      .style('cursor', (d: Point) => (ignoreNoise && d.c === -1 ? 'default' : 'pointer'))
       .on('mouseover', function (event, d: Point) {
+        if (ignoreNoise && d.c === -1) return;
         const rect = container.getBoundingClientRect();
         setTooltip({
           visible: true,
@@ -137,6 +140,7 @@ const DRVisualization: React.FC = () => {
         d3.select(this).attr('r', 5).attr('stroke', '#333').attr('stroke-width', 1);
       })
       .on('mousemove', function (event, d: Point) {
+        if (ignoreNoise && d.c === -1) return;
         const rect = container.getBoundingClientRect();
         setTooltip((prev) => ({
           ...prev,
@@ -151,6 +155,7 @@ const DRVisualization: React.FC = () => {
         setTooltip({ visible: false, x: 0, y: 0 });
       })
       .on('click', (_event, d: Point) => {
+        if (ignoreNoise && d.c === -1) return;
         if (interactionMode === 'point') {
           selectPoints([d.i]);
         } else {
@@ -167,7 +172,7 @@ const DRVisualization: React.FC = () => {
 
     svg.call(zoom as any);
 
-  }, [data.points, selection, margin, interactionMode, selectClusters, selectPoints]);
+  }, [data.points, selection, margin, interactionMode, selectClusters, selectPoints, ignoreNoise]);
 
   return (
     <div ref={containerRef} className="panel dr-visualization-container">
@@ -194,6 +199,14 @@ const DRVisualization: React.FC = () => {
                 onChange={() => setInteractionMode('cluster')}
               />
               <span>Cluster mode</span>
+            </label>
+            <label className="mode-toggle">
+              <input
+                type="checkbox"
+                checked={ignoreNoise}
+                onChange={(e) => setIgnoreNoise(e.target.checked)}
+              />
+              <span>Ignore noise (-1)</span>
             </label>
           </div>
         </div>
