@@ -36,6 +36,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .dr-plot {
@@ -47,6 +48,10 @@
 .panel-content > .dr-plot {
   width: 100%;
   height: 100%;
+}
+
+.panel-content {
+  position: relative;
 }
 
 .data-point {
@@ -62,4 +67,21 @@
   stroke: #007bff;
   stroke-width: 1px;
   fill: rgba(0, 123, 255, 0.1);
+}
+
+.mode-toggle.active span {
+  font-weight: 700;
+}
+
+.dr-tooltip {
+  position: absolute;
+  padding: 8px 10px;
+  background: rgba(33, 37, 41, 0.9);
+  color: #fff;
+  border-radius: 4px;
+  font-size: 12px;
+  pointer-events: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transform: translate(-50%, -120%);
+  white-space: nowrap;
 }

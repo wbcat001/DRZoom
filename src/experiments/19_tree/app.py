@@ -1,4 +1,4 @@
-﻿import random
+import random
 import numpy as np
 import pandas as pd
 import dash
@@ -604,7 +604,7 @@ if DBC_AVAILABLE:
 else:
     app.layout = html.Div([html.H3("Dash Bootstrap Components not available. Please install: pip install dash-bootstrap-components")])
 
-# dr-method選択 -> パラメータ設定
+# Callbacks
 @app.callback(Output('parameter-settings', 'children'), Input('dr-method-selector', 'value'))
 def update_parameter_settings(method):
     if method == 'UMAP':
@@ -621,7 +621,6 @@ def update_parameter_settings(method):
         return html.Div([html.Label("n_components:"), dcc.Dropdown(id='pca-n-components', options=[{'label': '2', 'value': 2}, {'label': '3', 'value': 3}], value=2)])
     return html.Div()
 
-# -> DR-plot更新
 @app.callback(Output('dr-visualization-plot', 'figure'), [Input('execute-button', 'n_clicks'), Input('dr-method-selector', 'value'), Input('dr-interaction-mode-toggle', 'value')])
 def update_dr_plot(n_clicks, method, interaction_mode):
     df = pd.DataFrame(DR_DUMMY_DATA)
@@ -635,7 +634,6 @@ def update_dr_plot(n_clicks, method, interaction_mode):
     fig.update_layout(dragmode=drag_mode)
     return fig
 
-# -> デンドログラム更新
 @app.callback(
     Output('dendrogram-plot', 'figure'),
     [
@@ -741,7 +739,7 @@ def update_detail_panel(active_tab, click_data, selected_data):
         if click_data:
             point_id = click_data['points'][0]['customdata'][0]
             trace_index = click_data['points'][0]['curveNumber']
-            label_mock = ['A', 'B', 'C'][trace_index % 3]
+            label_mock = ['A', 'B',git 'C'][trace_index % 3]
             return html.Div([html.H6(f"Selected Point Details (ID: {point_id})", className="fw-bold"), dbc.ListGroup([dbc.ListGroupItem(f"ID: {point_id}"), dbc.ListGroupItem(f"X: {click_data['points'][0]['x']:.3f}"), dbc.ListGroupItem(f"Y: {click_data['points'][0]['y']:.3f}"), dbc.ListGroupItem(f"Label: {label_mock}" )], flush=True), html.P("Neighbors (k=5): Mock data - Points 1, 5, 12, 23, 34", className="mt-3 small")])
         else:
             return html.Div([html.P("Click a point in the DR view to see details.")])

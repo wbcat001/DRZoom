@@ -16,7 +16,22 @@ try:
     from .mock_data_generator import generate_mock_data, get_mock_cache_data
 except ImportError:
     from mock_data_generator import generate_mock_data, get_mock_cache_data
+def _get_leaves(condensed_tree):
+    cluster_tree = condensed_tree[condensed_tree['child_size'] > 1]
+    print(len(cluster_tree))
+    if cluster_tree.shape[0] == 0:
+        # Return the only cluster, the root
+        return [condensed_tree['parent'].min()]
 
+    root = cluster_tree['parent'].min()
+    return _recurse_leaf_dfs(cluster_tree, root)
+  
+def _recurse_leaf_dfs(cluster_tree, current_node):
+  children = cluster_tree[cluster_tree['parent'] == current_node]['child']
+  if len(children) == 0:
+      return [current_node,]
+  else:
+      return sum([_recurse_leaf_dfs(cluster_tree, child) for child in children], [])
 class D3DataManager:
     """
     Manages data loading and transformation for the D3.js-based cluster explorer
@@ -49,7 +64,7 @@ class D3DataManager:
             "default": {
                 "name": "RAPIDS HDBSCAN Result",
                 "description": "HDBSCAN clustering result from RAPIDS GPU acceleration",
-                "data_path": "backend/data",  # 実データの配置先（base_path配下）
+                "data_path": "../data",  # 実データの配置先（base_path配下）
                 "point_count": 100000,
                 "cluster_count": 0,  # Will be determined from data
                 "dr_methods": ["umap", "tsne", "pca"]
@@ -102,6 +117,7 @@ class D3DataManager:
         
         config = self.datasets_config[dataset]
         data_path = self.base_path / config["data_path"]
+        print(f"Loading data from: {data_path}")
         
         # Define required data files
         projection_file = data_path / "projection.npy"
@@ -112,6 +128,7 @@ class D3DataManager:
         # If data files don't exist, use mock data for development
         # ============================================================
         if not projection_file.exists() or self.use_mock_data:
+            print("⚠️  Data files not found or mock data mode enabled, generating mock data")
             result = generate_mock_data(dataset, dr_method, config)
             # Cache for other methods
             cache_data = get_mock_cache_data(result)
@@ -121,6 +138,8 @@ class D3DataManager:
             cache_key = f"{dataset}_{dr_method}"
             self.cached_data[cache_key] = result
             return result
+        else: 
+            print("✓ Data files found, loading real data")
         
         try:
             # Load 2D projection coordinates
@@ -141,7 +160,7 @@ class D3DataManager:
         hdbscan_file = data_path / "condensed_tree_object.pkl"
         hdbscan_condensed_tree = None
         linkage_matrix = None
-        node_id_map = {}
+        old_new_id_map = {}
         
         if hdbscan_file.exists():
             try:
@@ -150,7 +169,7 @@ class D3DataManager:
                 print(f"✓ Loaded HDBSCAN condensed tree")
                 
                 # Convert to linkage matrix format
-                linkage_matrix, node_id_map = self._get_linkage_matrix_from_hdbscan(
+                linkage_matrix, old_new_id_map = self._get_linkage_matrix_from_hdbscan(
                     hdbscan_condensed_tree
                 )
             except Exception as e:
@@ -165,6 +184,11 @@ class D3DataManager:
             cluster_meta = self._compute_cluster_metadata(hdbscan_condensed_tree)
         else:
             cluster_meta = self._compute_cluster_metadata_from_labels(cluster_labels)
+
+        # Cache raw arrays for downstream queries (e.g., point detail/NN search)
+        self._embedding2d = embedding
+        self._labels = labels
+        self._cluster_labels = cluster_labels
         
         # Load cluster labels and words
         cluster_label_file = data_path / "cluster_to_label.csv"
@@ -297,7 +321,7 @@ class D3DataManager:
     
     def get_heatmap_data(
         self,
-        metric: str = "jaccard",
+        metric: str = "mahalanobis",
         top_n: int = 200,
         cluster_ids: Optional[List[int]] = None
     ) -> Dict[str, Any]:
@@ -305,34 +329,75 @@ class D3DataManager:
         Get similarity matrix for heatmap visualization
         
         Args:
-            metric: Similarity metric name (e.g., 'jaccard', 'cosine', 'kl')
+            metric: Similarity metric name (e.g., 'jaccard', 'cosine', 'kl', 'mahalanobis')
             top_n: Number of top clusters to include
             cluster_ids: Specific cluster IDs to include (if None, use top_n)
         
         Returns:
             Similarity matrix and cluster ordering
         """
+        print(f"Loading heatmap data with metric: {metric}, top_n: {top_n}")
         try:
             # Try to load precomputed similarity matrices
             data_path = self.base_path / self.datasets_config["default"]["data_path"]
             similarity_file = data_path / "cluster_similarities.pkl"
+            print(f"Loading similarity data from: {similarity_file}")
+            print(f"File exists: {similarity_file.exists()}")
+            metric = "mahalanobis_distance"
             
             if similarity_file.exists():
                 with open(similarity_file, 'rb') as f:
-                    similarities = pickle.load(f)
+                    similarities = pickle.load(f)[metric]
                 
-                # Get the requested metric
-                metric_key = f"{metric}_similarity" if metric != "jaccard" else "jaccard"
-                if metric_key in similarities:
-                    sim_matrix = similarities[metric_key]
+                
+                
+                # similarities is a dict with (cluster_id, cluster_id) as keys
+                # Extract unique cluster IDs
+                if isinstance(similarities, dict):
+                    cluster_id_set = set()
+                    for key in similarities.keys():
+                        if isinstance(key, tuple) and len(key) == 2:
+                            cluster_id_set.add(key[0])
+                            cluster_id_set.add(key[1])
                     
-                    # Return as 2D array (cluster x cluster)
-                    if isinstance(sim_matrix, np.ndarray):
+                    available_clusters = sorted(list(cluster_id_set))
+                    print(f"✓ Found {len(available_clusters)} clusters in similarity data")
+                    
+                    # Determine which clusters to include
+                    if cluster_ids:
+                        order = [c for c in cluster_ids if c in available_clusters]
+                    else:
+                        order = available_clusters[:top_n]
+                    
+                    if not order:
+                        print(f"⚠️  No valid clusters found")
+                    else:
+                        # Build similarity matrix from dict
+                        n = len(order)
+                        sim_matrix = np.zeros((n, n))
+                        
+                        for i, c1 in enumerate(order):
+                            for j, c2 in enumerate(order):
+                                # Try both key orders (symmetric)
+                                key1 = (c1, c2)
+                                key2 = (c2, c1)
+                                if key1 in similarities:
+                                    sim_matrix[i, j] = similarities[key1]
+                                elif key2 in similarities:
+                                    sim_matrix[i, j] = similarities[key2]
+                                elif i == j:
+                                    sim_matrix[i, j] = 1.0  # Self-similarity
+                        
+                        print(f"✓ Built {n}x{n} similarity matrix")
                         return {
                             "matrix": sim_matrix.tolist(),
-                            "clusterOrder": list(range(len(sim_matrix))),
+                            "clusterOrder": order,
                             "metric": metric
                         }
+                else:
+                    print(f"⚠️  Unexpected similarity data format: {type(similarities)}")
+            else: 
+                print(f"⚠️  Similarity file not found: {similarity_file}")
             
             # Fallback: generate mock similarity matrix
             print(f"⚠️  Using mock similarity matrix (no precomputed data)")
@@ -357,11 +422,13 @@ class D3DataManager:
             
         except Exception as e:
             print(f"Error loading heatmap data: {e}")
+            import traceback
+            traceback.print_exc()
             return {
                 "matrix": [],
                 "clusterOrder": [],
-            "metric": metric
-        }
+                "metric": metric
+            }
     
     def get_cluster_detail(self, cluster_id: int) -> Dict[str, Any]:
         """
@@ -535,7 +602,7 @@ class D3DataManager:
         Returns:
             Z (np.ndarray): Linkage matrix of shape (n_merges, 5) with columns
                 [child1, child2, parent, distance, cluster_size]
-            node_id_map (Dict): Mapping from original node IDs to contiguous IDs
+            old_new_id_map (Dict): Mapping from original node IDs to contiguous IDs
         """
         try:
             import pandas as pd
@@ -587,41 +654,47 @@ class D3DataManager:
             print(f"Generated {len(linkage_matrix)} linkage operations")
             
             # Map leaf nodes to 0..N-1
-            node_id_map = {}
+            old_new_id_map = {}
             current_id = 0
             
             # Extract leaf nodes (child_size == 1)
-            leaf_rows = raw_tree[raw_tree['child_size'] == 1]
-            leaves = sorted(set(leaf_rows['child'].tolist()))
-            print(f"Found {len(leaves)} leaf nodes")
+            # leaf_rows = raw_tree[raw_tree['child_size'] == 1]
+            # leaves = sorted(set(leaf_rows['child'].tolist()))
+            # print(f"Found {len(leaves)} leaf nodes")
+            leaves = _get_leaves(raw_tree)
             
             for leaf in leaves:
-                node_id_map[int(leaf)] = current_id
+                old_new_id_map[int(leaf)] = current_id
                 current_id += 1
             
             # Map internal nodes
             for row in reversed(linkage_matrix):
                 parent_id = row[2]
-                if parent_id not in node_id_map:
-                    node_id_map[parent_id] = current_id
+                if int(parent_id) not in old_new_id_map:
+                    old_new_id_map[int(parent_id)] = current_id
                     current_id += 1
             
-            print(f"Created node ID mapping: {len(node_id_map)} nodes")
+            print(f"Created node ID mapping: {len(old_new_id_map)} nodes")
+            # max
+            print(f"Max linkage matrix row[0]{max(row[0] for row in linkage_matrix) if linkage_matrix else 'N/A'}")
+            print(f"Max linkage matrix row[1]{max(row[1] for row in linkage_matrix) if linkage_matrix else 'N/A'}")
+            print(f"Max linkage matrix row[2]{max(row[2] for row in linkage_matrix) if linkage_matrix else 'N/A'}")
+            print(f"Max linkage matrix row[3]{max(row[3] for row in linkage_matrix) if linkage_matrix else 'N/A'}")
             
             # Remap linkage matrix to contiguous IDs
             max_lambda = max(row[3] for row in linkage_matrix) if linkage_matrix else 1.0
             linkage_matrix_mapped = [
                 [
-                    node_id_map[int(row[0])],
-                    node_id_map[int(row[1])],
-                    node_id_map[int(row[2])],
+                    old_new_id_map[int(row[0])],
+                    old_new_id_map[int(row[1])],
+                    old_new_id_map[int(row[2])],
                     max_lambda - row[3],  # Invert distance
                     row[4]  # Cluster size
                 ]
                 for row in reversed(linkage_matrix)
             ]
             
-            return np.array(linkage_matrix_mapped), node_id_map
+            return np.array(linkage_matrix_mapped), old_new_id_map
             
         except Exception as e:
             print(f"Error generating linkage matrix: {e}")

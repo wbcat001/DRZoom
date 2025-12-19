@@ -1,6 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useSelection, useData } from '../../store/useAppStore.tsx';
-import { getTopWords, formatClusterSize } from '../../utils';
+import { formatClusterSize } from '../../utils';
+import { apiClient } from '../../api/client';
+import type { PointDetail } from '../../types';
 import './DetailsPanel.css';
 
 type TabType = 'point-details' | 'selection-stats' | 'cluster-size' | 'system-log';
@@ -9,6 +11,9 @@ const DetailsPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('selection-stats');
   const { selection } = useSelection();
   const { data } = useData();
+  const [pointDetail, setPointDetail] = useState<PointDetail | null>(null);
+  const [pointDetailError, setPointDetailError] = useState<string | null>(null);
+  const [pointDetailLoading, setPointDetailLoading] = useState(false);
 
   const tabs: Array<{ id: TabType; label: string }> = [
     { id: 'point-details', label: 'Point Details' },
@@ -44,6 +49,43 @@ const DetailsPanel: React.FC = () => {
     };
   }, [selection.selectedClusterIds, selection.selectedPointIds, data]);
 
+  // Fetch point detail (including neighbors) when selection changes
+  useEffect(() => {
+    const firstPointId = Array.from(selection.selectedPointIds)[0];
+    if (firstPointId === undefined) {
+      setPointDetail(null);
+      setPointDetailError(null);
+      return;
+    }
+
+    let cancelled = false;
+    const fetchDetail = async () => {
+      try {
+        setPointDetailLoading(true);
+        const response = await apiClient.getPointDetail(firstPointId);
+        if (!cancelled) {
+          setPointDetail(response.point);
+          setPointDetailError(null);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setPointDetail(null);
+          setPointDetailError('Failed to load point detail');
+          console.error(error);
+        }
+      } finally {
+        if (!cancelled) {
+          setPointDetailLoading(false);
+        }
+      }
+    };
+
+    fetchDetail();
+    return () => {
+      cancelled = true;
+    };
+  }, [selection.selectedPointIds]);
+
   // Calculate cluster size distribution
   const clusterDistribution = useMemo(() => {
     const distribution = new Map<number, number>();
@@ -70,25 +112,46 @@ const DetailsPanel: React.FC = () => {
             </div>
           );
         }
-        const firstPointId = Array.from(selection.selectedPointIds)[0];
-        const firstPoint = data.points.find((p) => p.i === firstPointId);
         return (
           <div className="tab-content-area">
             <h5>Point Information</h5>
-            {firstPoint && (
+            {pointDetailLoading && (
+              <div className="info-item">Loading point detail...</div>
+            )}
+            {pointDetailError && (
+              <div className="info-item error-text">{pointDetailError}</div>
+            )}
+            {pointDetail && !pointDetailLoading && !pointDetailError && (
               <>
                 <div className="info-item">
-                  <strong>Point ID:</strong> <span>{firstPoint.i}</span>
+                  <strong>Point ID:</strong> <span>{pointDetail.id}</span>
                 </div>
                 <div className="info-item">
-                  <strong>Coordinates:</strong> <span>({firstPoint.x.toFixed(3)}, {firstPoint.y.toFixed(3)})</span>
+                  <strong>Label:</strong> <span>{pointDetail.label || 'N/A'}</span>
                 </div>
                 <div className="info-item">
-                  <strong>Cluster:</strong> <span>{firstPoint.c}</span>
+                  <strong>Cluster:</strong> <span>{pointDetail.clusterId}</span>
                 </div>
                 <div className="info-item">
-                  <strong>Label:</strong> <span>{firstPoint.l}</span>
+                  <strong>Coordinates:</strong>
+                  <span>
+                    ({pointDetail.coordinates.x.toFixed(3)}, {pointDetail.coordinates.y.toFixed(3)})
+                  </span>
                 </div>
+
+                <h6 style={{ marginTop: '8px' }}>Nearest Neighbors</h6>
+                {pointDetail.nearbyPoints && pointDetail.nearbyPoints.length > 0 ? (
+                  <div className="neighbor-list">
+                    {pointDetail.nearbyPoints.slice(0, 20).map((p) => (
+                      <div key={p.i} className="neighbor-item">
+                        <span className="neighbor-label">{p.l || `Point ${p.i}`}</span>
+                        <span className="neighbor-meta">ID {p.i} · C{p.c}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="empty-state small">No neighbor data available</div>
+                )}
               </>
             )}
           </div>
