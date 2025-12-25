@@ -122,7 +122,8 @@ class D3DataManager:
         # Define required data files
         projection_file = data_path / "projection.npy"
         word_file = data_path / "word.npy"
-        label_file = data_path / "hdbscan_label.npy"
+        point_cluster_file = data_path / "point_cluster_map.npy"
+        label_file = data_path / "hdbscan_label.npy"  # For noise detection only (-1 = noise)
         
         # ============================================================
         # If data files don't exist, use mock data for development
@@ -146,13 +147,16 @@ class D3DataManager:
             embedding = np.load(projection_file)  # (N, 2)
             # Load word labels
             labels = np.load(word_file)  # (N,)
-            # Load HDBSCAN cluster labels
-            cluster_labels = np.load(label_file)  # (N,)
+            # Load point-to-cluster mapping (contains original cluster IDs: 115760+)
+            point_cluster_labels = np.load(point_cluster_file)  # (N,)
+            # Load HDBSCAN labels for noise detection only
+            hdbscan_labels = np.load(label_file)  # (N,) - -1 for noise, >=0 for clusters
             point_count = len(embedding)
             
             print(f"✓ Loaded projection: {embedding.shape}")
             print(f"✓ Loaded words: {labels.shape}")
-            print(f"✓ Loaded cluster labels: {cluster_labels.shape}")
+            print(f"✓ Loaded point-to-cluster mapping: {point_cluster_labels.shape}")
+            print(f"✓ Loaded HDBSCAN labels: {hdbscan_labels.shape}")
         except Exception as e:
             raise ValueError(f"Error loading data files: {e}")
         
@@ -188,35 +192,52 @@ class D3DataManager:
         # Cache raw arrays for downstream queries (e.g., point detail/NN search)
         self._embedding2d = embedding
         self._labels = labels
-        self._cluster_labels = cluster_labels
+        self._cluster_labels = point_cluster_labels
+        self._hdbscan_labels = hdbscan_labels  # For noise detection
         
         # Load cluster labels and words
         cluster_label_file = data_path / "cluster_to_label.csv"
         cluster_names, cluster_words = self._load_cluster_labels(cluster_label_file)
         
+        print(f"DEBUG: Loaded cluster_names: {len(cluster_names)} items")
+        if cluster_names:
+            sample = list(cluster_names.items())[:5]
+            print(f"DEBUG: Sample cluster_names: {sample}")
+        
+        print(f"DEBUG: Loaded cluster_words: {len(cluster_words)} items")
+        if cluster_words:
+            sample = list(cluster_words.items())[:5]
+            print(f"DEBUG: Sample cluster_words keys: {[k for k, v in sample]}")
+        
+        # point_cluster_labels already contains original cluster IDs (115760+)
+        # Build point_cluster_map from loaded data
+        point_cluster_map = {}
+        for i in range(point_count):
+            point_cluster_map[i] = int(point_cluster_labels[i])
+        
+        print(f"DEBUG: point_cluster_map size: {len(point_cluster_map)}")
+        print(f"DEBUG: Sample mappings: {list(point_cluster_map.items())[:10]}")
+        
         # Format points for JSON
         points = []
         for i in range(point_count):
+            # Check if point is noise using hdbscan_labels (-1 = noise)
+            cluster_id = -1 if hdbscan_labels[i] == -1 else int(point_cluster_labels[i])
+            
             points.append({
-                "i": i,                    # Index
+                "i": i,                              # Index
                 "x": float(embedding[i, 0]),
                 "y": float(embedding[i, 1]),
-                "c": 0,                    # Cluster ID (will be set from point_cluster_map)
-                "l": str(labels[i])        # Label
+                "c": cluster_id,                     # Cluster ID (-1 for noise, or 115760+ for valid cluster)
+                "l": str(labels[i])                  # Label
             })
-        
-        # Create point to cluster mapping from cluster labels
-        point_cluster_map = {i: int(cluster_labels[i]) for i in range(point_count)}
-        
-        # Update cluster IDs in points
-        for i, point in enumerate(points):
-            point["c"] = int(cluster_labels[i])
         
         # Convert linkage matrix (c1, c2, parent, dist, size) to JSON-compatible format
         z_matrix = [
             {
                 "child1": int(row[0]),
                 "child2": int(row[1]),
+                "parent": int(row[2]),
                 "distance": float(row[3]),
                 "size": int(row[4])
             }
@@ -242,12 +263,23 @@ class D3DataManager:
         self._cluster_words = cluster_words
         self._point_cluster_map = point_cluster_map
 
+        # Create clusterIdMap: maps dendrogram sequential indices to original cluster IDs
+        # old_new_id_map is {original_cluster_id: sequential_index}
+        # We need the reverse: {sequential_index: original_cluster_id}
+        clusterIdMap = {v: k for k, v in old_new_id_map.items()} if old_new_id_map else {}
+        print(f"DEBUG: old_new_id_map size: {len(old_new_id_map)}")
+        print(f"DEBUG: clusterIdMap (reversed) size: {len(clusterIdMap)}")
+        if clusterIdMap:
+            sample = list(clusterIdMap.items())[:5]
+            print(f"DEBUG: Sample clusterIdMap entries: {sample}")
+        
         result = {
             "points": points,
             "zMatrix": z_matrix,
             "clusterMeta": cluster_meta_json,
             "clusterNames": cluster_names,
             "clusterWords": cluster_words,
+            "clusterIdMap": clusterIdMap,  # Map dendrogram sequential index -> original cluster ID
             "datasetInfo": {
                 "name": config["name"],
                 "pointCount": point_count,
@@ -258,6 +290,69 @@ class D3DataManager:
         
         # Cache the result
         self.cached_data[cache_key] = result
+        return result
+    
+    def get_initial_data_no_noise(
+        self,
+        dataset: str,
+        dr_method: str,
+        dr_params: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Load and process initial data for visualization with noise points filtered out
+        
+        Same as get_initial_data but excludes points with cluster_id = -1 (noise)
+        
+        Returns JSON-compatible data structure with noise-filtered data
+        """
+        # First get the full data
+        full_data = self.get_initial_data(dataset, dr_method, dr_params)
+        
+        # Filter out noise points (cluster_id = -1)
+        filtered_points = [p for p in full_data["points"] if p["c"] != -1]
+        
+        # Reindex points
+        point_id_map = {}  # old_id -> new_id
+        new_points = []
+        for new_idx, point in enumerate(filtered_points):
+            point_id_map[point["i"]] = new_idx
+            new_point = point.copy()
+            new_point["i"] = new_idx
+            new_points.append(new_point)
+        
+        # Filter linkage matrix to only include non-noise clusters
+        non_noise_cluster_ids = set(p["c"] for p in filtered_points)
+        print(f"DEBUG: non_noise_cluster_ids size: {len(non_noise_cluster_ids)}")
+        print(f"DEBUG: Sample non_noise_cluster_ids: {list(non_noise_cluster_ids)[:10]}")
+        print(f"DEBUG: full_data clusterNames keys sample: {list(full_data['clusterNames'].keys())[:10]}")
+        
+        filtered_metadata = {
+            cid: meta for cid, meta in full_data["clusterMeta"].items()
+            if int(cid) in non_noise_cluster_ids
+        }
+        
+        # Update point count in datasetInfo
+        result = {
+            "points": new_points,
+            "zMatrix": full_data["zMatrix"],  # Keep unchanged
+            "clusterMeta": filtered_metadata,
+            "clusterNames": {
+                k: v for k, v in full_data["clusterNames"].items()
+                if int(k) in non_noise_cluster_ids
+            },
+            "clusterWords": {
+                k: v for k, v in full_data["clusterWords"].items()
+                if int(k) in non_noise_cluster_ids
+            },
+            "clusterIdMap": full_data.get("clusterIdMap", {}),  # Include clusterIdMap from full_data
+            "datasetInfo": {
+                **full_data["datasetInfo"],
+                "pointCount": len(new_points),
+                "originalPointCount": full_data["datasetInfo"]["pointCount"],
+                "description": full_data["datasetInfo"]["description"] + " (noise filtered)"
+            }
+        }
+        
         return result
     
     def get_clusters_from_point_selection(
@@ -290,23 +385,38 @@ class D3DataManager:
         
         # Count points per cluster in selection
         cluster_counts: Dict[int, int] = {}
-        total_cluster_sizes: Dict[int, int] = {}
-        
+
         for point_id in point_ids:
             if point_id in self._point_cluster_map:
                 cluster_id = self._point_cluster_map[point_id]
+                # Skip noise cluster
+                if cluster_id == -1:
+                    continue
                 cluster_counts[cluster_id] = cluster_counts.get(cluster_id, 0) + 1
-        
-        # Filter by containment ratio
+
+        # Build total cluster sizes from cached metadata
+        total_cluster_sizes: Dict[int, int] = {}
+        if hasattr(self, '_cluster_metadata') and self._cluster_metadata:
+            for cid, meta in self._cluster_metadata.items():
+                # Skip noise
+                if cid == -1:
+                    continue
+                size = int(meta.get('size', meta.get('z', 0)) or 0)
+                if size > 0:
+                    total_cluster_sizes[cid] = size
+
+        # Filter by containment ratio using actual cluster sizes
         selected_clusters = {}
         for cluster_id, count in cluster_counts.items():
-            # Estimate cluster size (would need full metadata for exact count)
-            total_size = count  # Placeholder - should use actual cluster size
-            containment_ratio = count / total_size if total_size > 0 else 0
-            
+            total_size = total_cluster_sizes.get(cluster_id, 0)
+            if total_size <= 0:
+                continue
+            containment_ratio = count / total_size
+
             if containment_ratio >= containment_ratio_threshold:
                 selected_clusters[cluster_id] = {
                     "selectedPoints": count,
+                    "totalSize": total_size,
                     "containmentRatio": containment_ratio
                 }
         
@@ -676,10 +786,7 @@ class D3DataManager:
             
             print(f"Created node ID mapping: {len(old_new_id_map)} nodes")
             # max
-            print(f"Max linkage matrix row[0]{max(row[0] for row in linkage_matrix) if linkage_matrix else 'N/A'}")
-            print(f"Max linkage matrix row[1]{max(row[1] for row in linkage_matrix) if linkage_matrix else 'N/A'}")
-            print(f"Max linkage matrix row[2]{max(row[2] for row in linkage_matrix) if linkage_matrix else 'N/A'}")
-            print(f"Max linkage matrix row[3]{max(row[3] for row in linkage_matrix) if linkage_matrix else 'N/A'}")
+            
             
             # Remap linkage matrix to contiguous IDs
             max_lambda = max(row[3] for row in linkage_matrix) if linkage_matrix else 1.0

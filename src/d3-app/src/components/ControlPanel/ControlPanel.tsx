@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAppContext, useViewConfig, useUIState } from '../../store/useAppStore.tsx';
+import { useData, useSelection } from '../../store/useAppStore.tsx';
 import { apiClient } from '../../api/client';
 import './ControlPanel.css';
 
@@ -11,9 +11,8 @@ interface Dataset {
 }
 
 const ControlPanel: React.FC = () => {
-  const { state, dispatch } = useAppContext();
-  const { config, setDRMethod, setCurrentMetric, setFilterParams } = useViewConfig();
-  const { uiState, setLoading, setError } = useUIState();
+  const { data, setData } = useData();
+  const { clearSelection } = useSelection();
 
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [selectedDataset, setSelectedDataset] = useState('default');
@@ -21,13 +20,15 @@ const ControlPanel: React.FC = () => {
   const [umapParams, setUmapParams] = useState({ n_neighbors: 15, min_dist: 0.1 });
   const [tsneParams, setTsneParams] = useState({ perplexity: 30 });
   const [pcaParams, setPcaParams] = useState({ n_components: 2 });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Load available datasets on mount
   useEffect(() => {
     let isMounted = true;
     const loadDatasets = async () => {
       try {
-        setLoading(true);
+        setIsLoading(true);
         const response = await apiClient.getDatasets();
         if (isMounted) {
           setDatasets(response.datasets as any);
@@ -39,7 +40,7 @@ const ControlPanel: React.FC = () => {
         console.error(error);
       } finally {
         if (isMounted) {
-          setLoading(false);
+          setIsLoading(false);
         }
       }
     };
@@ -51,7 +52,7 @@ const ControlPanel: React.FC = () => {
 
   const handleExecute = async () => {
     try {
-      setLoading(true);
+      setIsLoading(true);
       
       // Get DR parameters based on selected method
       let drParams: Record<string, any> = {};
@@ -63,28 +64,34 @@ const ControlPanel: React.FC = () => {
         drParams = pcaParams;
       }
 
-      // Fetch initial data
-      const response = await apiClient.getInitialData(
+      // Fetch initial data with noise points filtered out for better performance
+      const response = await apiClient.getInitialDataNoNoise(
         selectedDataset,
         selectedDRMethod,
         drParams
       );
 
       if (response.success) {
-        // Update app state with fetched data
-        dispatch({
-          type: 'SET_DATA',
-          payload: {
-            points: response.data.points,
-            linkageMatrix: response.data.zMatrix,
-            clusterMetadata: response.data.clusterMeta,
-            clusterNames: response.data.clusterNames,
-            clusterWords: response.data.clusterWords
-          }
+        console.log('DEBUG: API Response received:', {
+          hasClusterIdMap: !!response.data.clusterIdMap,
+          clusterIdMapLength: response.data.clusterIdMap ? Object.keys(response.data.clusterIdMap).length : 0,
+          clusterIdMapSample: response.data.clusterIdMap ? Object.entries(response.data.clusterIdMap).slice(0, 5) : [],
+          hasClusterNames: !!response.data.clusterNames,
+          clusterNamesLength: response.data.clusterNames ? Object.keys(response.data.clusterNames).length : 0,
+          clusterNamesSample: response.data.clusterNames ? Object.entries(response.data.clusterNames).slice(0, 5) : [],
+          hasClusterWords: !!response.data.clusterWords,
+          clusterWordsLength: response.data.clusterWords ? Object.keys(response.data.clusterWords).length : 0
         });
-
-        // Update DR method
-        setDRMethod(selectedDRMethod as 'umap' | 'tsne' | 'pca');
+        
+        // Update app state with fetched data
+        setData(
+          response.data.points,
+          response.data.zMatrix,
+          response.data.clusterMeta,
+          response.data.clusterNames,
+          response.data.clusterWords,
+          response.data.clusterIdMap || {}
+        );
         
         setError(null);
       } else {
@@ -94,17 +101,13 @@ const ControlPanel: React.FC = () => {
       setError(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       console.error(error);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
-  };
-
-  const handleMetricChange = (metric: string) => {
-    setCurrentMetric(metric as 'kl_divergence' | 'bhattacharyya_coefficient' | 'mahalanobis_distance');
   };
 
   const handleFilterChange = () => {
     // Update filter params based on current slider values
-    setFilterParams(config.filterParams);
+    // TODO: implement filter functionality
   };
 
   return (
@@ -120,7 +123,7 @@ const ControlPanel: React.FC = () => {
             className="form-control"
             value={selectedDataset}
             onChange={(e) => setSelectedDataset(e.target.value)}
-            disabled={uiState.isLoading}
+            disabled={isLoading}
           >
             {datasets.map((dataset) => (
               <option key={dataset.id} value={dataset.id}>
@@ -142,7 +145,7 @@ const ControlPanel: React.FC = () => {
                   value={method}
                   checked={selectedDRMethod === method}
                   onChange={() => setSelectedDRMethod(method)}
-                  disabled={uiState.isLoading}
+                  disabled={isLoading}
                 />
                 <span>{method.toUpperCase()}</span>
               </label>
@@ -215,68 +218,32 @@ const ControlPanel: React.FC = () => {
           )}
         </div>
 
-        {/* Metric Selector */}
-        <div className="form-group">
-          <label>Similarity Metric:</label>
-          <select
-            className="form-control"
-            value={config.currentMetric}
-            onChange={(e) => handleMetricChange(e.target.value)}
-          >
-            <option value="kl_divergence">KL Divergence</option>
-            <option value="bhattacharyya_coefficient">Bhattacharyya Coefficient</option>
-            <option value="mahalanobis_distance">Mahalanobis Distance</option>
-          </select>
-        </div>
-
-        {/* Filter Controls */}
-        <div className="filter-container">
-          <details>
-            <summary>Advanced Filters</summary>
-            <div className="form-group">
-              <label>
-                Stability: [{config.filterParams.stability[0].toFixed(2)}, {config.filterParams.stability[1].toFixed(2)}]
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.1"
-                className="slider"
-                onChange={handleFilterChange}
-              />
-            </div>
-            <div className="form-group">
-              <label>
-                Strahler: [{config.filterParams.strahler[0].toFixed(0)}, {config.filterParams.strahler[1].toFixed(0)}]
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                className="slider"
-                onChange={handleFilterChange}
-              />
-            </div>
-          </details>
-        </div>
-
         {/* Status Messages */}
-        {uiState.error && (
-          <div className="alert alert-danger">{uiState.error}</div>
+        {error && (
+          <div className="alert alert-danger">{error}</div>
         )}
-        {uiState.isLoading && (
+        {isLoading && (
           <div className="alert alert-info">Loading...</div>
         )}
 
         {/* Execute Button */}
-        <button
-          className="btn btn-primary execute-btn"
-          onClick={handleExecute}
-          disabled={uiState.isLoading}
-        >
-          {uiState.isLoading ? 'Loading...' : 'Load Data'}
-        </button>
+        <div className="button-stack">
+          <button
+            className="btn btn-primary execute-btn"
+            onClick={handleExecute}
+            disabled={isLoading}
+          >
+            {isLoading ? 'Loading...' : 'Load Data'}
+          </button>
+
+          <button
+            className="btn clear-btn"
+            type="button"
+            onClick={() => clearSelection()}
+          >
+            Clear Selection
+          </button>
+        </div>
       </div>
     </div>
   );

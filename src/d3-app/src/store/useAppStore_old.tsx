@@ -27,17 +27,13 @@ export type AppAction =
         clusterMetadata: ClusterMetaMap;
         clusterNames: Record<number, string>;
         clusterWords: Record<number, string[]>;
-        clusterIdMap: Record<number, number>;
       };
     }
   | { type: 'SELECT_POINTS'; payload: number[] }
   | { type: 'SELECT_CLUSTERS'; payload: number[] }
-  | { type: 'SET_DR_SELECTED_CLUSTERS'; payload: number[] }
   | { type: 'CLEAR_SELECTION' }
   | { type: 'SET_HEATMAP_CLICKED'; payload: number[] }
   | { type: 'SET_DENDROGRAM_HOVERED'; payload: number | null }
-  | { type: 'SET_SEARCH_QUERY'; payload: string }
-  | { type: 'SET_SEARCH_RESULTS'; payload: number[] }
   | { type: 'SET_DR_METHOD'; payload: 'umap' | 'tsne' | 'pca' }
   | {
       type: 'SET_CURRENT_METRIC';
@@ -58,7 +54,6 @@ export interface AppStateValue {
   clusterMetadata: ClusterMetaMap;
   clusterNames: Record<number, string>;
   clusterWords: Record<number, string[]>;
-  clusterIdMap: Record<number, number>; // Dendrogram index -> actual cluster ID
   currentDataset: string;
   currentDRMethod: 'umap' | 'tsne' | 'pca';
   currentMetric: 'kl_divergence' | 'bhattacharyya_coefficient' | 'mahalanobis_distance';
@@ -90,11 +85,8 @@ export const AppContext = createContext<AppContextType | undefined>(undefined);
 const initializeSelectionState = (): SelectionState => ({
   selectedPointIds: new Set(),
   selectedClusterIds: new Set(),
-  drSelectedClusterIds: new Set(),
   heatmapClickedClusters: new Set(),
   dendrogramHoveredCluster: null,
-  searchQuery: '',
-  searchResultPointIds: new Set(),
   lastInteractionSource: 'none',
   lastInteractionTime: 0
 });
@@ -124,7 +116,8 @@ const initialState: AppStateValue = {
   linkageMatrix: [],
   clusterMetadata: {},
   clusterNames: {},
-  clusterWords: {},  clusterIdMap: {},  currentDataset: '',
+  clusterWords: {},
+  currentDataset: '',
   currentDRMethod: 'umap',
   currentMetric: 'kl_divergence',
   dendrogramCoords: null,
@@ -149,7 +142,6 @@ function appReducer(state: AppStateValue, action: AppAction): AppStateValue {
         clusterMetadata: action.payload.clusterMetadata,
         clusterNames: action.payload.clusterNames,
         clusterWords: action.payload.clusterWords,
-        clusterIdMap: action.payload.clusterIdMap,
         lastUpdated: Date.now()
       };
 
@@ -170,17 +162,6 @@ function appReducer(state: AppStateValue, action: AppAction): AppStateValue {
         selection: {
           ...state.selection,
           selectedClusterIds: new Set(action.payload),
-          lastInteractionSource: 'dr',
-          lastInteractionTime: Date.now()
-        }
-      };
-
-    case 'SET_DR_SELECTED_CLUSTERS':
-      return {
-        ...state,
-        selection: {
-          ...state.selection,
-          drSelectedClusterIds: new Set(action.payload),
           lastInteractionSource: 'dr',
           lastInteractionTime: Date.now()
         }
@@ -210,28 +191,6 @@ function appReducer(state: AppStateValue, action: AppAction): AppStateValue {
           ...state.selection,
           dendrogramHoveredCluster: action.payload,
           lastInteractionSource: 'dendrogram',
-          lastInteractionTime: Date.now()
-        }
-      };
-
-    case 'SET_SEARCH_QUERY':
-      return {
-        ...state,
-        selection: {
-          ...state.selection,
-          searchQuery: action.payload,
-          lastInteractionSource: 'none',
-          lastInteractionTime: Date.now()
-        }
-      };
-
-    case 'SET_SEARCH_RESULTS':
-      return {
-        ...state,
-        selection: {
-          ...state.selection,
-          searchResultPointIds: new Set(action.payload),
-          lastInteractionSource: 'none',
           lastInteractionTime: Date.now()
         }
       };
@@ -322,12 +281,9 @@ export const useSelection = () => {
     selection: state.selection,
     selectPoints: (pointIds: number[]) => dispatch({ type: 'SELECT_POINTS', payload: pointIds }),
     selectClusters: (clusterIds: number[]) => dispatch({ type: 'SELECT_CLUSTERS', payload: clusterIds }),
-    setDRSelectedClusters: (clusterIds: number[]) => dispatch({ type: 'SET_DR_SELECTED_CLUSTERS', payload: clusterIds }),
     clearSelection: () => dispatch({ type: 'CLEAR_SELECTION' }),
     setHeatmapClicked: (clusterIds: number[]) => dispatch({ type: 'SET_HEATMAP_CLICKED', payload: clusterIds }),
-    setDendrogramHovered: (clusterId: number | null) => dispatch({ type: 'SET_DENDROGRAM_HOVERED', payload: clusterId }),
-    setSearchQuery: (query: string) => dispatch({ type: 'SET_SEARCH_QUERY', payload: query }),
-    setSearchResults: (pointIds: number[]) => dispatch({ type: 'SET_SEARCH_RESULTS', payload: pointIds })
+    setDendrogramHovered: (clusterId: number | null) => dispatch({ type: 'SET_DENDROGRAM_HOVERED', payload: clusterId })
   };
 };
 
@@ -342,20 +298,18 @@ export const useData = () => {
       linkageMatrix: state.linkageMatrix,
       clusterMetadata: state.clusterMetadata,
       clusterNames: state.clusterNames,
-      clusterWords: state.clusterWords,
-      clusterIdMap: state.clusterIdMap
+      clusterWords: state.clusterWords
     },
     setData: (
       points: Point[],
       linkageMatrix: LinkageMatrix,
       clusterMetadata: ClusterMetaMap,
       clusterNames: Record<number, string>,
-      clusterWords: Record<number, string[]>,
-      clusterIdMap: Record<number, number>
+      clusterWords: Record<number, string[]>
     ) =>
       dispatch({
         type: 'SET_DATA',
-        payload: { points, linkageMatrix, clusterMetadata, clusterNames, clusterWords, clusterIdMap }
+        payload: { points, linkageMatrix, clusterMetadata, clusterNames, clusterWords }
       })
   };
 };

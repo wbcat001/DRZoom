@@ -6,10 +6,28 @@ const ClusterDetails: React.FC = () => {
   const { state } = useAppContext();
   const { selection } = useSelection();
 
-  // Get the first selected cluster ID
-  const selectedClusterId = Array.from(selection.selectedClusterIds)[0];
+  const selectedClusterIds = React.useMemo(
+    () => Array.from(selection.selectedClusterIds),
+    [selection.selectedClusterIds]
+  );
 
-  if (!selectedClusterId) {
+  const clusters = React.useMemo(() => {
+    return selectedClusterIds.map((cid) => {
+      const name = state.clusterNames[cid] || `Cluster ${cid}`;
+      const words = state.clusterWords[cid] || [];
+      const meta = state.clusterMetadata[cid];
+      return {
+        id: cid,
+        name,
+        words,
+        size: meta?.z ?? 0,
+        stability: meta?.s ?? 0,
+        strahler: meta?.h ?? 0
+      };
+    });
+  }, [selectedClusterIds, state.clusterNames, state.clusterWords, state.clusterMetadata]);
+
+  if (clusters.length === 0) {
     return (
       <div className="panel cluster-details-panel">
         <div className="panel-header">Cluster Details</div>
@@ -20,49 +38,47 @@ const ClusterDetails: React.FC = () => {
     );
   }
 
-  const clusterName = state.clusterNames[selectedClusterId] || `Cluster ${selectedClusterId}`;
-  const clusterWords = state.clusterWords[selectedClusterId] || [];
-  const clusterMeta = state.clusterMetadata[selectedClusterId];
-
   return (
     <div className="panel cluster-details-panel">
       <div className="panel-header">Cluster Details</div>
-      <div className="panel-content">
-        <div className="detail-section">
-          <h3 className="cluster-title">{clusterName}</h3>
-          <div className="cluster-id">ID: {selectedClusterId}</div>
+      <div className="cluster-details-content">
+        <div className="summary-row">
+          <div className="summary-pill">{clusters.length} selected</div>
         </div>
 
-        {clusterWords.length > 0 && (
-          <div className="detail-section">
-            <h4>Representative Words</h4>
-            <div className="word-list">
-              {clusterWords.map((word, idx) => (
-                <span key={idx} className="word-tag">{word}</span>
-              ))}
-            </div>
-          </div>
-        )}
+        <div className="cluster-cards">
+          {clusters.map((cluster) => (
+            <div key={cluster.id} className="cluster-card">
+              <div className="card-header">
+                <div className="card-title">{cluster.name}</div>
+                <div className="card-sub">ID: {cluster.id}</div>
+              </div>
 
-        {clusterMeta && (
-          <div className="detail-section">
-            <h4>Statistics</h4>
-            <div className="stats-grid">
-              <div className="stat-item">
-                <span className="stat-label">Size:</span>
-                <span className="stat-value">{clusterMeta.z || 0}</span>
+              <div className="card-stats">
+                <div className="stat-block">
+                  <div className="stat-label">Size</div>
+                  <div className="stat-value">{cluster.size}</div>
+                </div>
+                <div className="stat-block">
+                  <div className="stat-label">Stability</div>
+                  <div className="stat-value">{cluster.stability?.toFixed(3) ?? '0.000'}</div>
+                </div>
+                <div className="stat-block">
+                  <div className="stat-label">Strahler</div>
+                  <div className="stat-value">{cluster.strahler}</div>
+                </div>
               </div>
-              <div className="stat-item">
-                <span className="stat-label">Stability:</span>
-                <span className="stat-value">{clusterMeta.s?.toFixed(3) || '0.000'}</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-label">Strahler:</span>
-                <span className="stat-value">{clusterMeta.h || 0}</span>
-              </div>
+
+              {cluster.words.length > 0 && (
+                <div className="words-container">
+                  {cluster.words.slice(0, 8).map((word, idx) => (
+                    <span key={idx} className="word-tag">{word}</span>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          ))}
+        </div>
       </div>
     </div>
   );

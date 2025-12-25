@@ -121,6 +121,12 @@
   color: #0c5460;
 }
 
+.button-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .execute-btn {
   width: 100%;
   padding: 12px;
@@ -146,4 +152,26 @@
   background: #6c757d;
   cursor: not-allowed;
   opacity: 0.7;
+}
+
+.clear-btn {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #f9fafb;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.clear-btn:hover {
+  background: #f3f4f6;
+  border-color: #cbd5e1;
+}
+
+.clear-btn:active {
+  background: #e5e7eb;
 }

@@ -30,18 +30,11 @@ export interface SelectionState {
   selectedPointIds: Set<number>;
   selectedClusterIds: Set<number>;
 
-  // DR-derived cluster selections (clusters of selected points)
-  drSelectedClusterIds: Set<number>;
-
   // Heatmap selections
   heatmapClickedClusters: Set<number>;
 
   // Dendrogram selections
   dendrogramHoveredCluster: number | null;
-
-  // Search/label filter selections
-  searchQuery: string;
-  searchResultPointIds: Set<number>;
 
   // Last interaction info
   lastInteractionSource: 'dr' | 'dendrogram' | 'heatmap' | 'none';
@@ -92,12 +85,9 @@ export interface AppState {
   // Selection actions
   selectPoints: (pointIds: number[]) => void;
   selectClusters: (clusterIds: number[]) => void;
-  setDRSelectedClusters: (clusterIds: number[]) => void;
   clearSelection: () => void;
   setHeatmapClicked: (clusterIds: number[]) => void;
   setDendrogramHovered: (clusterId: number | null) => void;
-  setSearchQuery: (query: string) => void;
-  setSearchResults: (pointIds: number[]) => void;
 
   // View configuration actions
   setDRMethod: (method: 'umap' | 'tsne' | 'pca') => void;

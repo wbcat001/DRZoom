@@ -3,6 +3,11 @@ d3-app backend API - Main API routes
 Provides endpoints for the D3.js-based HDBSCAN cluster explorer
 """
 
+"""
+command to run the server:
+uvicorn main_d3:app --host 0.0.0.0 --port 8000
+"""
+
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -123,6 +128,48 @@ async def get_initial_data(
         
         # Get data from manager
         data = data_manager.get_initial_data(dataset, dr_method, dr_params_dict)
+        
+        return {
+            "success": True,
+            "data": data,
+            "timestamp": data_manager.get_timestamp()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/initial_data_no_noise")
+async def get_initial_data_no_noise(
+    dataset: str = Query(...),
+    dr_method: str = Query("umap"),
+    dr_params: Optional[str] = Query(None)
+):
+    """
+    Get initial data for visualization with noise points (cluster=-1) filtered out
+    
+    Same parameters and response as /api/initial_data but excludes noise points
+    for better rendering performance with large datasets.
+    
+    Parameters:
+    - dataset: Dataset name
+    - dr_method: Dimensionality reduction method (umap, tsne, pca)
+    - dr_params: JSON string of DR parameters
+    
+    Returns:
+    - points: Array of point objects WITHOUT noise points (c != -1)
+    - zMatrix: Linkage matrix for dendrogram
+    - clusterMeta: Cluster metadata (only for non-noise clusters)
+    - clusterNames: Cluster label names (only for non-noise clusters)
+    - clusterWords: Representative words for each cluster (only for non-noise clusters)
+    """
+    try:
+        # Parse DR parameters
+        dr_params_dict = {}
+        if dr_params:
+            dr_params_dict = json.loads(dr_params)
+        
+        # Get data from manager (with noise filtering)
+        data = data_manager.get_initial_data_no_noise(dataset, dr_method, dr_params_dict)
         
         return {
             "success": True,

@@ -18,6 +18,7 @@ export function determineClusterHighlight(
     isDRSelected: selectedClusterIds.has(clusterId),
     isHeatmapClicked: heatmapClickedClusters.has(clusterId),
     isDendrogramSelected: dendrogramHovered === clusterId,
+    isSearchResult: false,
     isHovered: false
   };
 }
@@ -31,17 +32,20 @@ export function determinePointHighlight(
   selectedClusterIds: Set<number>,
   selectedPointIds: Set<number>,
   heatmapClickedClusters: Set<number>,
-  dendrogramHovered: number | null
+  dendrogramHovered: number | null,
+  searchResultPointIds: Set<number> = new Set()
 ): HighlightState {
   const isPointSelected = selectedPointIds.has(pointId);
   const isClusterSelected = selectedClusterIds.has(point.c);
   const isClusterHeatmapClicked = heatmapClickedClusters.has(point.c);
   const isClusterDendrogramHovered = dendrogramHovered === point.c;
+  const isSearchResult = searchResultPointIds.has(pointId);
 
   return {
     isDRSelected: isPointSelected || isClusterSelected,
     isHeatmapClicked: isClusterHeatmapClicked,
     isDendrogramSelected: isClusterDendrogramHovered,
+    isSearchResult: isSearchResult,
     isHovered: false
   };
 }
@@ -53,13 +57,15 @@ export function isAnySelectionActive(
   selectedClusterIds: Set<number>,
   selectedPointIds: Set<number>,
   heatmapClickedClusters: Set<number>,
-  dendrogramHovered: number | null
+  dendrogramHovered: number | null,
+  searchResultPointIds: Set<number> = new Set()
 ): boolean {
   return (
     selectedClusterIds.size > 0 ||
     selectedPointIds.size > 0 ||
     heatmapClickedClusters.size > 0 ||
-    dendrogramHovered !== null
+    dendrogramHovered !== null ||
+    searchResultPointIds.size > 0
   );
 }
 

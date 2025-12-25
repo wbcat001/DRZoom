@@ -61,6 +61,19 @@ export const apiClient = {
   },
 
   /**
+   * Get initial data with noise points filtered out (cluster_id != -1)
+   * Better performance for large datasets
+   */
+  getInitialDataNoNoise: async (dataset: string, drMethod: string, drParams?: Record<string, any>) => {
+    const queryParams = new URLSearchParams({
+      dataset,
+      dr_method: drMethod,
+      ...(drParams && { dr_params: JSON.stringify(drParams) })
+    });
+    return fetchAPI<InitialDataResponse>(`/initial_data_no_noise?${queryParams.toString()}`);
+  },
+
+  /**
    * Map selected points to clusters
    */
   pointToCluster: async (request: PointToClusterRequest) => {

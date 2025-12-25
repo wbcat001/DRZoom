@@ -24,12 +24,14 @@ export interface Point {
  * Represents a merge operation in hierarchical clustering
  * @property child1 - Index of first child cluster
  * @property child2 - Index of second child cluster
+ * @property parent - Index of parent cluster created by this merge
  * @property distance - Distance at which merge occurred
  * @property size - Total number of points in merged cluster
  */
 export interface LinkageMatrixEntry {
   child1: number;
   child2: number;
+  parent: number;
   distance: number;
   size: number;
 }

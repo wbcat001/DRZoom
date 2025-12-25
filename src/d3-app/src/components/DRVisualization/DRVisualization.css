@@ -1,7 +1,7 @@
 .header-content {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 8px;
   width: 100%;
 }
 
@@ -13,6 +13,7 @@
 .interaction-controls {
   display: flex;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .mode-toggle {
@@ -63,10 +64,26 @@
   stroke-width: 2px;
 }
 
-.brush-layer .selection {
+.brush-layer .selection,
+.dr-brush .selection {
   stroke: #007bff;
-  stroke-width: 1px;
-  fill: rgba(0, 123, 255, 0.1);
+  stroke-width: 2px;
+  fill: rgba(0, 123, 255, 0.15);
+}
+
+.lasso-path {
+  pointer-events: none;
+  fill: rgba(255, 165, 0, 0.15);
+  stroke: #FFA500;
+  stroke-width: 2px;
+  stroke-dasharray: 5, 5;
+  animation: dash 1s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -10;
+  }
 }
 
 .mode-toggle.active span {

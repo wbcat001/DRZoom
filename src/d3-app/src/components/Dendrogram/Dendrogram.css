@@ -48,6 +48,44 @@
   stroke-width: 2;
 }
 
+.dendrogram-tooltip {
+  position: absolute;
+  background-color: rgba(0, 0, 0, 0.85);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 1000;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dendrogram-tooltip div {
+  margin: 2px 0;
+}
+
+.dendrogram-tooltip strong {
+  font-weight: 600;
+  color: #4fc3f7;
+}
+
+.dendrogram-tooltip .tooltip-meta {
+  font-size: 11px;
+  color: #90caf9;
+  margin-bottom: 2px;
+}
+
+.dendrogram-tooltip .tooltip-words {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  color: #b3e5fc;
+  font-style: italic;
+  max-width: 250px;
+  word-wrap: break-word;
+}
+
 .node-label {
   pointer-events: none;
   font-size: 12px;
