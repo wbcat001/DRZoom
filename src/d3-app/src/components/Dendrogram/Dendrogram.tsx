@@ -68,6 +68,19 @@ const Dendrogram: React.FC = () => {
     }
   }, [data.linkageMatrix]);
 
+  // Reverse clusterIdMap: original cluster ID -> sequential index used in linkage/coords
+  const reverseClusterIdMap = useMemo(() => {
+    const rev = new Map<number, number>();
+    Object.entries(data.clusterIdMap || {}).forEach(([seqStr, orig]) => {
+      const seq = Number(seqStr);
+      const origId = Number(orig);
+      if (!Number.isNaN(seq) && !Number.isNaN(origId)) {
+        rev.set(origId, seq);
+      }
+    });
+    return rev;
+  }, [data.clusterIdMap]);
+
   // Main D3 rendering logic
   useEffect(() => {
     if (!svgRef.current || !containerRef.current || !dendrogramData) return;
@@ -91,6 +104,11 @@ const Dendrogram: React.FC = () => {
     const zoomRoot = svg.append('g');
     const g = zoomRoot.append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
+
+    // Reapply stored zoom/pan transform so toggling brush mode preserves view
+    if (zoomTransformRef.current) {
+      zoomRoot.attr('transform', zoomTransformRef.current as any);
+    }
 
     // Add background
     g.append('rect')
@@ -315,6 +333,65 @@ const Dendrogram: React.FC = () => {
             console.error('Failed to copy to clipboard:', err);
           });
       });
+
+    // Add annotations for clusters selected via dendrogram or DR selection
+    const annotationClusterIds = new Set<number>([
+      ...Array.from(selection.selectedClusterIds),
+      ...Array.from(selection.drSelectedClusterIds)
+    ]);
+
+    if (annotationClusterIds.size > 0) {
+      const leafCount = data.linkageMatrix.length + 1;
+      const rowsCount = dendrogramData.coords.icoord.length;
+
+      const annotations: { x: number; y: number; label: string; idx: number }[] = [];
+
+      let annIdx = 0;
+
+      annotationClusterIds.forEach((origId) => {
+        const seqIdx = reverseClusterIdMap.get(origId);
+        if (seqIdx === undefined) return;
+
+        // For merge nodes, seqIdx corresponds to linkage row index = seqIdx - leafCount
+        const rowIdx = seqIdx - leafCount;
+        if (rowIdx < 0 || rowIdx >= rowsCount) return;
+
+        const xVals = dendrogramData.coords.icoord[rowIdx];
+        const yVals = dendrogramData.coords.dcoord[rowIdx];
+        if (!xVals || !yVals || xVals.length === 0 || yVals.length === 0) return;
+
+        const xPos = d3.mean(xVals) ?? 0;
+        const yPos = d3.max(yVals) ?? 0;
+
+        const label = (data.clusterNames[origId] || data.clusterNames[String(origId)] || `Cluster ${origId}`) as string;
+        // Stagger vertically by index to reduce overlap
+        const offset = annIdx * -10; // -10px per annotation
+        annotations.push({ x: xScale(xPos), y: yScale(yPos) - 8 + offset, label, idx: annIdx });
+        annIdx += 1;
+      });
+
+      // Adjust font size based on zoom scale
+      const zoomScale = zoomTransformRef.current?.k || 1;
+      const baseFontSize = 10;
+      const adjustedFontSize = Math.max(6, baseFontSize / zoomScale); // min 6px
+
+      g.selectAll('.dendro-annotation')
+        .data(annotations)
+        .enter()
+        .append('text')
+        .attr('class', 'dendro-annotation')
+        .attr('x', (d) => d.x)
+        .attr('y', (d) => d.y)
+        .attr('text-anchor', 'middle')
+        .attr('font-size', `${adjustedFontSize}px`)
+        .attr('font-weight', '500')
+        .attr('fill', '#2C7BE5')
+        .attr('stroke', '#fff')
+        .attr('stroke-width', `${Math.max(1, 2 / zoomScale)}px`)
+        .attr('paint-order', 'stroke')
+        .attr('pointer-events', 'none')
+        .text((d) => d.label);
+    }
 
     // Add brush selection (rectangular)
     if (brushEnabled) {

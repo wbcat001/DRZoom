@@ -164,6 +164,11 @@ const DRVisualization: React.FC = () => {
     const g = zoomRoot.append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
+    // Reapply stored zoom/pan transform so toggling brush mode preserves view
+    if (zoomTransformRef.current) {
+      zoomRoot.attr('transform', zoomTransformRef.current as any);
+    }
+
     // Add background
     g.append('rect')
       .attr('width', width)
@@ -294,6 +299,11 @@ const DRVisualization: React.FC = () => {
     if (selection.searchResultPointIds.size > 0) {
       const searchResults = data.points.filter(p => selection.searchResultPointIds.has(p.i));
       
+      // Adjust font size based on zoom scale
+      const zoomScale = zoomTransformRef.current?.k || 1;
+      const baseFontSize = 11;
+      const adjustedFontSize = Math.max(6, baseFontSize / zoomScale); // min 6px
+      
       g.selectAll('.search-annotation')
         .data(searchResults)
         .enter()
@@ -302,19 +312,30 @@ const DRVisualization: React.FC = () => {
         .attr('x', (d) => scaleFactors.xScale(d.x))
         .attr('y', (d) => scaleFactors.yScale(d.y) - 8)
         .attr('text-anchor', 'middle')
-        .attr('font-size', '11px')
+        .attr('font-size', `${adjustedFontSize}px`)
         .attr('font-weight', '600')
         .attr('fill', '#9C27B0')
         .attr('stroke', '#fff')
-        .attr('stroke-width', '2px')
+        .attr('stroke-width', `${Math.max(1, 2 / zoomScale)}px`)
         .attr('paint-order', 'stroke')
         .attr('pointer-events', 'none')
         .text((d) => d.l);
     }
 
     // Add annotations for selected clusters (from dendrogram or DR selection)
-    if (showAnnotations && selection.selectedClusterIds.size > 0) {
-      const selectedClusterIds = Array.from(selection.selectedClusterIds);
+    // Combine manual selections and DR-derived cluster selections
+    const annotationClusterIds = new Set<number>([
+      ...Array.from(selection.selectedClusterIds),
+      ...Array.from(selection.drSelectedClusterIds)
+    ]);
+
+    if (showAnnotations && annotationClusterIds.size > 0) {
+      const selectedClusterIds = Array.from(annotationClusterIds);
+
+      // Adjust font size based on zoom scale
+      const zoomScale = zoomTransformRef.current?.k || 1;
+      const baseFontSize = 12;
+      const adjustedFontSize = Math.max(6, baseFontSize / zoomScale); // min 6px
 
       selectedClusterIds.forEach((cid) => {
         const clusterPoints = data.points.filter((p) => p.c === cid);
@@ -331,11 +352,11 @@ const DRVisualization: React.FC = () => {
           .attr('x', centroidX)
           .attr('y', centroidY - 12)
           .attr('text-anchor', 'middle')
-          .attr('font-size', '12px')
+          .attr('font-size', `${adjustedFontSize}px`)
           .attr('font-weight', '600')
           .attr('fill', '#2C7BE5')
           .attr('stroke', '#fff')
-          .attr('stroke-width', '2px')
+          .attr('stroke-width', `${Math.max(1, 2 / zoomScale)}px`)
           .attr('paint-order', 'stroke')
           .attr('pointer-events', 'none')
           .text(rep);
