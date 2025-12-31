@@ -218,7 +218,18 @@ const DRVisualization: React.FC = () => {
           selection.searchResultPointIds
         );
         const style = getElementStyle(highlight, anyActive);
-        return (style.fill || colorScale(d.c.toString())) as string;
+        
+        // Similarity-based color takes priority over highlight styles
+        if (d.color) {
+          return d.color as string;
+        }
+        
+        // Fall back to highlight style or cluster color scale
+        if (style.fill) {
+          return style.fill;
+        }
+        
+        return colorScale(d.c.toString());
       })
       .attr('opacity', (d) => {
         const dendroHoverForPoint = hoveredClusterIds.has(d.c) ? d.c : null;

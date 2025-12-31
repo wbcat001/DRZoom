@@ -10,6 +10,7 @@
  * @property y - Y coordinate in reduced dimension space
  * @property c - Cluster ID this point belongs to
  * @property l - Label/name of this point
+ * @property color - Optional color from similarity-based coloring (rgb format)
  */
 export interface Point {
   i: number;      // Index
@@ -17,6 +18,7 @@ export interface Point {
   y: number;      // Y coordinate
   c: number;      // Cluster ID
   l: string;      // Label
+  color?: string; // Optional color (similarity-based coloring)
 }
 
 /**

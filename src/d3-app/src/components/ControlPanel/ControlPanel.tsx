@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useData, useSelection } from '../../store/useAppStore.tsx';
+import { useData, useSelection, useViewConfig } from '../../store/useAppStore.tsx';
 import { apiClient } from '../../api/client';
 import './ControlPanel.css';
 
@@ -13,6 +13,7 @@ interface Dataset {
 const ControlPanel: React.FC = () => {
   const { data, setData } = useData();
   const { clearSelection } = useSelection();
+  const { config, setColorMode } = useViewConfig();
 
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [selectedDataset, setSelectedDataset] = useState('default');
@@ -68,21 +69,11 @@ const ControlPanel: React.FC = () => {
       const response = await apiClient.getInitialDataNoNoise(
         selectedDataset,
         selectedDRMethod,
-        drParams
+        drParams,
+        config.colorMode
       );
 
       if (response.success) {
-        console.log('DEBUG: API Response received:', {
-          hasClusterIdMap: !!response.data.clusterIdMap,
-          clusterIdMapLength: response.data.clusterIdMap ? Object.keys(response.data.clusterIdMap).length : 0,
-          clusterIdMapSample: response.data.clusterIdMap ? Object.entries(response.data.clusterIdMap).slice(0, 5) : [],
-          hasClusterNames: !!response.data.clusterNames,
-          clusterNamesLength: response.data.clusterNames ? Object.keys(response.data.clusterNames).length : 0,
-          clusterNamesSample: response.data.clusterNames ? Object.entries(response.data.clusterNames).slice(0, 5) : [],
-          hasClusterWords: !!response.data.clusterWords,
-          clusterWordsLength: response.data.clusterWords ? Object.keys(response.data.clusterWords).length : 0
-        });
-        
         // Update app state with fetched data
         setData(
           response.data.points,
@@ -148,6 +139,26 @@ const ControlPanel: React.FC = () => {
                   disabled={isLoading}
                 />
                 <span>{method.toUpperCase()}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Color Mode Selector */}
+        <div className="form-group">
+          <label>Color Mode:</label>
+          <div className="radio-group">
+            {['cluster', 'distance'].map((mode) => (
+              <label key={mode} className="radio-label">
+                <input
+                  type="radio"
+                  name="color-mode"
+                  value={mode}
+                  checked={config.colorMode === mode}
+                  onChange={() => setColorMode(mode as 'cluster' | 'distance')}
+                  disabled={isLoading}
+                />
+                <span>{mode === 'cluster' ? 'Cluster Color' : 'Similarity-based Color'}</span>
               </label>
             ))}
           </div>

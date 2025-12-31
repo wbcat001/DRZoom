@@ -47,8 +47,8 @@ export type AppAction =
   | { type: 'UPDATE_DENDROGRAM_COORDS'; payload: DendrogramCoordinates }
   | { type: 'SET_ZOOM_STATE'; payload: ZoomState }
   | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_ERROR'; payload: string | null };
-
+  | { type: 'SET_ERROR'; payload: string | null }
+  | { type: 'SET_COLOR_MODE'; payload: 'cluster' | 'distance' };
 /**
  * Application state
  */
@@ -62,6 +62,7 @@ export interface AppStateValue {
   currentDataset: string;
   currentDRMethod: 'umap' | 'tsne' | 'pca';
   currentMetric: 'kl_divergence' | 'bhattacharyya_coefficient' | 'mahalanobis_distance';
+  colorMode: 'cluster' | 'distance';
   dendrogramCoords: DendrogramCoordinates | null;
   filterParams: FilterParams;
   selection: SelectionState;
@@ -127,6 +128,7 @@ const initialState: AppStateValue = {
   clusterWords: {},  clusterIdMap: {},  currentDataset: '',
   currentDRMethod: 'umap',
   currentMetric: 'kl_divergence',
+    colorMode: 'cluster',
   dendrogramCoords: null,
   filterParams: initializeFilterParams(),
   selection: initializeSelectionState(),
@@ -246,6 +248,12 @@ function appReducer(state: AppStateValue, action: AppAction): AppStateValue {
       return {
         ...state,
         currentMetric: action.payload
+      };
+
+    case 'SET_COLOR_MODE':
+      return {
+        ...state,
+        colorMode: action.payload
       };
 
     case 'SET_FILTER_PARAMS':
@@ -370,11 +378,13 @@ export const useViewConfig = () => {
       currentDataset: state.currentDataset,
       currentDRMethod: state.currentDRMethod,
       currentMetric: state.currentMetric,
+      colorMode: state.colorMode,
       filterParams: state.filterParams
     },
     setDRMethod: (method: 'umap' | 'tsne' | 'pca') => dispatch({ type: 'SET_DR_METHOD', payload: method }),
     setCurrentMetric: (metric: 'kl_divergence' | 'bhattacharyya_coefficient' | 'mahalanobis_distance') =>
       dispatch({ type: 'SET_CURRENT_METRIC', payload: metric }),
+    setColorMode: (mode: 'cluster' | 'distance') => dispatch({ type: 'SET_COLOR_MODE', payload: mode }),
     setFilterParams: (params: FilterParams) => dispatch({ type: 'SET_FILTER_PARAMS', payload: params }),
     updateDendrogramCoords: (coords: DendrogramCoordinates) =>
       dispatch({ type: 'UPDATE_DENDROGRAM_COORDS', payload: coords }),

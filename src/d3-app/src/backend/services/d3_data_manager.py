@@ -14,8 +14,10 @@ from pathlib import Path
 # Mock data generator for development without real data files
 try:
     from .mock_data_generator import generate_mock_data, get_mock_cache_data
+    from .color_embedding import compute_cluster_colors_from_similarity
 except ImportError:
     from mock_data_generator import generate_mock_data, get_mock_cache_data
+    from color_embedding import compute_cluster_colors_from_similarity
 def _get_leaves(condensed_tree):
     cluster_tree = condensed_tree[condensed_tree['child_size'] > 1]
     print(len(cluster_tree))
@@ -44,7 +46,9 @@ class D3DataManager:
         self.current_dataset = None
         self.current_dr_method = None
         self.cached_data = {}
+        self._similarity_dict = None  # Cache for similarity dictionary
         self._load_configuration()
+        self._load_similarity_dict()  # Load similarity dictionary at startup
     
     def _load_configuration(self):
         """Load configuration for available datasets"""
@@ -73,6 +77,23 @@ class D3DataManager:
         # Enable mock data mode when files don't exist
         self.use_mock_data = False  # ← 実データを読み込むモードに変更
     
+    def _load_similarity_dict(self):
+        """Load similarity dictionary for color embedding"""
+        # Try to load from cluster_similarities.pkl
+        similarity_file = self.base_path / "../data/cluster_similarities.pkl"
+        
+        if similarity_file.exists():
+            try:
+                with open(similarity_file, 'rb') as f:
+                    self._similarity_dict = pickle.load(f)
+                print(f"✓ Loaded similarity dictionary with metrics: {list(self._similarity_dict.keys())}")
+            except Exception as e:
+                print(f"⚠️  Could not load similarity dictionary: {e}")
+                self._similarity_dict = None
+        else:
+            print(f"⚠️  Similarity file not found at {similarity_file}")
+            self._similarity_dict = None
+    
     def get_timestamp(self) -> str:
         """Get current timestamp in ISO format"""
         return datetime.now().isoformat()
@@ -94,10 +115,19 @@ class D3DataManager:
         self,
         dataset: str,
         dr_method: str,
-        dr_params: Optional[Dict[str, Any]] = None
+        dr_params: Optional[Dict[str, Any]] = None,
+        color_mode: str = 'cluster'
     ) -> Dict[str, Any]:
         """
         Load and process initial data for visualization
+        
+        Args:
+            dataset: Dataset ID
+            dr_method: Dimensionality reduction method
+            dr_params: Optional parameters for DR method
+            color_mode: Color assignment mode
+                - 'cluster': Default cluster coloring
+                - 'distance': Distance-based coloring using similarity-to-HSV embedding
         
         Returns JSON-compatible data structure with:
         - points: Array of point objects
@@ -218,19 +248,44 @@ class D3DataManager:
         print(f"DEBUG: point_cluster_map size: {len(point_cluster_map)}")
         print(f"DEBUG: Sample mappings: {list(point_cluster_map.items())[:10]}")
         
+        # Compute cluster colors based on color_mode
+        cluster_colors = None
+        if color_mode == 'distance' and self._similarity_dict is not None:
+            try:
+                metric = 'mahalanobis_distance'
+                if metric in self._similarity_dict:
+                    cluster_colors = compute_cluster_colors_from_similarity(
+                        self._similarity_dict[metric],
+                        scaling_type='robust',
+                        value_range=(0.5, 1)  # Avoid very dark colors
+                    )
+                else:
+                    print(f"⚠️  Metric '{metric}' not found in similarity dict")
+            except Exception as e:
+                import traceback
+                print(f"⚠️  Error computing distance-based colors: {e}")
+                print(traceback.format_exc())
+                cluster_colors = None
+        
         # Format points for JSON
         points = []
         for i in range(point_count):
             # Check if point is noise using hdbscan_labels (-1 = noise)
             cluster_id = -1 if hdbscan_labels[i] == -1 else int(point_cluster_labels[i])
             
-            points.append({
+            point = {
                 "i": i,                              # Index
                 "x": float(embedding[i, 0]),
                 "y": float(embedding[i, 1]),
                 "c": cluster_id,                     # Cluster ID (-1 for noise, or 115760+ for valid cluster)
                 "l": str(labels[i])                  # Label
-            })
+            }
+            
+            # Add color if available
+            if cluster_colors and cluster_id in cluster_colors:
+                point["color"] = cluster_colors[cluster_id]
+            
+            points.append(point)
         
         # Convert linkage matrix (c1, c2, parent, dist, size) to JSON-compatible format
         z_matrix = [
@@ -296,17 +351,24 @@ class D3DataManager:
         self,
         dataset: str,
         dr_method: str,
-        dr_params: Optional[Dict[str, Any]] = None
+        dr_params: Optional[Dict[str, Any]] = None,
+        color_mode: str = 'cluster'
     ) -> Dict[str, Any]:
         """
         Load and process initial data for visualization with noise points filtered out
         
         Same as get_initial_data but excludes points with cluster_id = -1 (noise)
         
+        Parameters:
+        - dataset: Dataset name
+        - dr_method: Dimensionality reduction method
+        - dr_params: DR parameters
+        - color_mode: Color assignment mode ('cluster' or 'distance')
+        
         Returns JSON-compatible data structure with noise-filtered data
         """
         # First get the full data
-        full_data = self.get_initial_data(dataset, dr_method, dr_params)
+        full_data = self.get_initial_data(dataset, dr_method, dr_params, color_mode)
         
         # Filter out noise points (cluster_id = -1)
         filtered_points = [p for p in full_data["points"] if p["c"] != -1]

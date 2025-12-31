@@ -50,11 +50,13 @@ async function fetchAPI<T>(
 export const apiClient = {
   /**
    * Get initial data for visualization
+   * @param colorMode - Color assignment mode: 'cluster' (default) or 'distance' (similarity-based)
    */
-  getInitialData: async (dataset: string, drMethod: string, drParams?: Record<string, any>) => {
+  getInitialData: async (dataset: string, drMethod: string, drParams?: Record<string, any>, colorMode: string = 'cluster') => {
     const queryParams = new URLSearchParams({
       dataset,
       dr_method: drMethod,
+      color_mode: colorMode,
       ...(drParams && { dr_params: JSON.stringify(drParams) })
     });
     return fetchAPI<InitialDataResponse>(`/initial_data?${queryParams.toString()}`);
@@ -63,11 +65,13 @@ export const apiClient = {
   /**
    * Get initial data with noise points filtered out (cluster_id != -1)
    * Better performance for large datasets
+   * @param colorMode - Color assignment mode: 'cluster' (default) or 'distance' (similarity-based)
    */
-  getInitialDataNoNoise: async (dataset: string, drMethod: string, drParams?: Record<string, any>) => {
+  getInitialDataNoNoise: async (dataset: string, drMethod: string, drParams?: Record<string, any>, colorMode: string = 'cluster') => {
     const queryParams = new URLSearchParams({
       dataset,
       dr_method: drMethod,
+      color_mode: colorMode,
       ...(drParams && { dr_params: JSON.stringify(drParams) })
     });
     return fetchAPI<InitialDataResponse>(`/initial_data_no_noise?${queryParams.toString()}`);
