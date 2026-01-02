@@ -39,6 +39,9 @@ export interface SelectionState {
   // Dendrogram selections
   dendrogramHoveredCluster: number | null;
 
+  // Nearby clusters (from hover in DR)
+  nearbyClusterIds: Set<number>;
+
   // Search/label filter selections
   searchQuery: string;
   searchResultPointIds: Set<number>;

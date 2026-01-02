@@ -102,8 +102,12 @@ export interface SVGStyle {
 }
 
 export function getElementStyle(highlight: HighlightState, anySelectionActive: boolean): SVGStyle {
+  // Only return fill color if there's an active highlight or selection
+  const hasActiveHighlight = highlight.isDRSelected || highlight.isHeatmapClicked || 
+                             highlight.isDendrogramSelected || highlight.isSearchResult || highlight.isHovered;
+  
   return {
-    fill: getHighlightColor(highlight),
+    fill: hasActiveHighlight || anySelectionActive ? getHighlightColor(highlight) : undefined,
     stroke: '#333',
     strokeWidth: highlight.isHovered ? 2 : 0.5,
     opacity: getHighlightOpacity(highlight, anySelectionActive)

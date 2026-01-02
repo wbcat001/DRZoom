@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import * as d3 from 'd3';
 import { useSelection, useData, useUIState } from '../../store/useAppStore';
 import { Point } from '../../types';
@@ -12,7 +12,8 @@ import './DRVisualization.css';
 const DRVisualization: React.FC = () => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { selection, selectClusters, selectPoints, setDRSelectedClusters } = useSelection();
+  const circlesRef = useRef<any>(null);
+  const { selection, selectClusters, selectPoints, setDRSelectedClusters, setNearbyClusterIds } = useSelection();
   const { data } = useData();
   const { setError } = useUIState();
   const [, setDimensions] = useState({ width: 0, height: 0 });
@@ -54,6 +55,15 @@ const DRVisualization: React.FC = () => {
 
     return ids;
   }, [selection.dendrogramHoveredCluster, data.linkageMatrix, data.clusterIdMap]);
+
+  // Apply red stroke to nearby clusters (called when nearbyClusterIds changes)
+  const applyNearbyStroke = useCallback(() => {
+    if (!circlesRef.current) return;
+
+    circlesRef.current
+      .attr('stroke', (d: Point) => (selection.nearbyClusterIds.has(d.c) ? '#FF0000' : 'none'))
+      .attr('stroke-width', (d: Point) => (selection.nearbyClusterIds.has(d.c) ? 0.5 : 0));
+  }, [selection.nearbyClusterIds]);
 
   // Update dimensions on container resize
   useEffect(() => {
@@ -137,6 +147,11 @@ const DRVisualization: React.FC = () => {
     setDRSelectedClusters(selectedClusters);
   }, [selection.selectedPointIds, data.points, data.clusterMetadata, containmentThreshold, setDRSelectedClusters]);
 
+  // Update circle stroke when nearby clusters change
+  useEffect(() => {
+    applyNearbyStroke();
+  }, [applyNearbyStroke]);
+
   // Main D3 rendering logic
   useEffect(() => {
     if (!svgRef.current || !containerRef.current || data.points.length === 0) return;
@@ -199,7 +214,7 @@ const DRVisualization: React.FC = () => {
       .attr('cx', (d) => scaleFactors.xScale(d.x))
       .attr('cy', (d) => scaleFactors.yScale(d.y))
       .attr('r', 1)
-      .attr('fill', (d) => {
+      .attr('fill', function (d: any) {
         const dendroHoverForPoint = hoveredClusterIds.has(d.c) ? d.c : null;
         const highlight = determinePointHighlight(
           d.i,
@@ -219,18 +234,15 @@ const DRVisualization: React.FC = () => {
         );
         const style = getElementStyle(highlight, anyActive);
         
-        // Similarity-based color takes priority over highlight styles
+        // Color priority: similarity-based > highlight style > cluster scale
         if (d.color) {
           return d.color as string;
         }
-        
-        // Fall back to highlight style or cluster color scale
         if (style.fill) {
           return style.fill;
         }
-        
-        return colorScale(d.c.toString());
-      })
+        return colorScale(d.c.toString()) as string;
+      } as any)
       .attr('opacity', (d) => {
         const dendroHoverForPoint = hoveredClusterIds.has(d.c) ? d.c : null;
         const highlight = determinePointHighlight(
@@ -245,6 +257,8 @@ const DRVisualization: React.FC = () => {
         const style = getElementStyle(highlight, anySelectionActive);
         return style.opacity || 1.0;
       })
+      .attr('stroke', 'none')
+      .attr('stroke-width', 0)
       .style('cursor', (d: Point) => (ignoreNoise && d.c === -1 ? 'default' : 'pointer'))
       .on('mouseover', function (event, d: Point) {
         if (ignoreNoise && d.c === -1) return;
@@ -255,7 +269,21 @@ const DRVisualization: React.FC = () => {
           y: event.clientY - rect.top + 12,
           point: { id: d.i, label: d.l, cluster: d.c }
         });
-        d3.select(this).attr('r', 5).attr('stroke', '#333').attr('stroke-width', 1);
+        d3.select(this).attr('r', 5).attr('stroke', '#FF0000').attr('stroke-width', 2);
+
+        // Fetch nearby clusters for this cluster
+        const clusterId = d.c;
+        fetch(`http://localhost:8000/api/clusters/${clusterId}/nearby`)
+          .then((res) => res.json())
+          .then((response) => {
+            const nearbyIds = response.nearbyClusterIds || [];
+            console.log(`[Nearby Clusters] Cluster ${clusterId}:`, nearbyIds);
+            setNearbyClusterIds(nearbyIds);
+          })
+          .catch((error) => {
+            console.error('Failed to fetch nearby clusters:', error);
+            setNearbyClusterIds([]);
+          });
       })
       .on('mousemove', function (event, d: Point) {
         if (ignoreNoise && d.c === -1) return;
@@ -271,6 +299,7 @@ const DRVisualization: React.FC = () => {
       .on('mouseout', function () {
         d3.select(this).attr('r', 3).attr('stroke-width', 0);
         setTooltip({ visible: false, x: 0, y: 0 });
+        setNearbyClusterIds([]);
       })
       .on('click', (_event, d: Point) => {
         if (ignoreNoise && d.c === -1) return;
@@ -305,6 +334,10 @@ const DRVisualization: React.FC = () => {
           console.error('Clipboard copy error:', err);
         }
       });
+
+    // Store circles reference and apply initial nearby stroke
+    circlesRef.current = circles;
+    applyNearbyStroke();
 
     // Add text annotations for search results
     if (selection.searchResultPointIds.size > 0) {
@@ -443,8 +476,8 @@ const DRVisualization: React.FC = () => {
         container: g,
         svg: svg,
         items: data.points,
-        xScale: scaleFactors.xScale,
-        yScale: scaleFactors.yScale,
+        xScale: scaleFactors.xScale as any,
+        yScale: scaleFactors.yScale as any,
         ignoreNoise,
         onStart: () => {
           console.log('Lasso selection started');
@@ -466,7 +499,28 @@ const DRVisualization: React.FC = () => {
       lassoRef.current = null;
     }
 
-  }, [data.points, selection, margin, interactionMode, selectClusters, selectPoints, ignoreNoise, brushEnabled, lassoEnabled]);
+  }, [
+    data.points,
+    data.clusterMetadata,
+    data.clusterNames,
+    data.clusterWords,
+    selection.selectedClusterIds,
+    selection.selectedPointIds,
+    selection.drSelectedClusterIds,
+    selection.heatmapClickedClusters,
+    selection.dendrogramHoveredCluster,
+    selection.searchResultPointIds,
+    hoveredClusterIds,
+    margin,
+    interactionMode,
+    selectClusters,
+    selectPoints,
+    ignoreNoise,
+    brushEnabled,
+    lassoEnabled,
+    showAnnotations,
+    applyNearbyStroke
+  ]);
 
   // Cleanup lasso on unmount
   useEffect(() => {

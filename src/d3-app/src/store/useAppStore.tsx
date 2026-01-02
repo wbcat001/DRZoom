@@ -36,6 +36,7 @@ export type AppAction =
   | { type: 'CLEAR_SELECTION' }
   | { type: 'SET_HEATMAP_CLICKED'; payload: number[] }
   | { type: 'SET_DENDROGRAM_HOVERED'; payload: number | null }
+  | { type: 'SET_NEARBY_CLUSTERS'; payload: number[] }
   | { type: 'SET_SEARCH_QUERY'; payload: string }
   | { type: 'SET_SEARCH_RESULTS'; payload: number[] }
   | { type: 'SET_DR_METHOD'; payload: 'umap' | 'tsne' | 'pca' }
@@ -94,6 +95,7 @@ const initializeSelectionState = (): SelectionState => ({
   drSelectedClusterIds: new Set(),
   heatmapClickedClusters: new Set(),
   dendrogramHoveredCluster: null,
+  nearbyClusterIds: new Set(),
   searchQuery: '',
   searchResultPointIds: new Set(),
   lastInteractionSource: 'none',
@@ -216,6 +218,16 @@ function appReducer(state: AppStateValue, action: AppAction): AppStateValue {
         }
       };
 
+    case 'SET_NEARBY_CLUSTERS':
+      return {
+        ...state,
+        selection: {
+          ...state.selection,
+          nearbyClusterIds: new Set(action.payload),
+          lastInteractionTime: Date.now()
+        }
+      };
+
     case 'SET_SEARCH_QUERY':
       return {
         ...state,
@@ -334,6 +346,7 @@ export const useSelection = () => {
     clearSelection: () => dispatch({ type: 'CLEAR_SELECTION' }),
     setHeatmapClicked: (clusterIds: number[]) => dispatch({ type: 'SET_HEATMAP_CLICKED', payload: clusterIds }),
     setDendrogramHovered: (clusterId: number | null) => dispatch({ type: 'SET_DENDROGRAM_HOVERED', payload: clusterId }),
+    setNearbyClusterIds: (clusterIds: number[]) => dispatch({ type: 'SET_NEARBY_CLUSTERS', payload: clusterIds }),
     setSearchQuery: (query: string) => dispatch({ type: 'SET_SEARCH_QUERY', payload: query }),
     setSearchResults: (pointIds: number[]) => dispatch({ type: 'SET_SEARCH_RESULTS', payload: pointIds })
   };

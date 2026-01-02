@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 import json
+import random
 
 # Support both package and script execution
 try:  # pragma: no cover
@@ -330,28 +331,27 @@ async def get_nearby_clusters(cluster_id: int):
     try:
         # TODO: Implement actual logic to determine nearby clusters
         # Candidates: stability-based, size-ratio-based, similarity-based, etc.
-
-        # Prefer real cluster IDs from loaded data so the frontend can highlight points
-        cluster_meta = getattr(data_manager, "_cluster_metadata", {}) or {}
-        cluster_ids = [int(cid) for cid in cluster_meta.keys() if int(cid) != cluster_id]
-
-        if cluster_ids:
-            # Sort by distance to the target cluster_id and take the nearest 120
-            nearby_ids = sorted(cluster_ids, key=lambda cid: abs(cid - cluster_id))[:120]
-        else:
-            # Fallback dummy generation if metadata is unavailable
-            import random
-            random.seed(cluster_id)
-            num_nearby = random.randint(100, 200)
-            print(f"num_nearby: {num_nearby}")
-            nearby_ids = []
-            for _ in range(num_nearby):
-                offset = random.randint(-50, 50)
-                nearby_id = cluster_id + offset
-                if nearby_id > 0 and nearby_id != cluster_id:
-                    nearby_ids.append(nearby_id)
-            nearby_ids = sorted(list(set(nearby_ids)))
-
+        
+        # Placeholder: return dummy nearby clusters (for testing)
+        # Generate 10-15 dummy cluster IDs based on the target cluster ID
+        
+        # Seed based on cluster_id for consistency
+        random.seed(cluster_id)
+        
+        # Generate nearby clusters with IDs close to the target
+        num_nearby = random.randint(10, 15)
+        nearby_ids = []
+        
+        for _ in range(num_nearby):
+            # Add some variation (within ±500 of the target)
+            offset = random.randint(-500, 500)
+            nearby_id = cluster_id + offset
+            if nearby_id > 0 and nearby_id != cluster_id:
+                nearby_ids.append(nearby_id)
+        
+        # Ensure we have unique IDs and return sorted
+        nearby_ids = sorted(list(set(nearby_ids)))[:15]  # Limit to 15
+        
         return {
             "success": True,
             "nearbyClusterIds": nearby_ids,
