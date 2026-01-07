@@ -179,9 +179,11 @@ const DRVisualization: React.FC = () => {
     const g = zoomRoot.append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
-    // Reapply stored zoom/pan transform so toggling brush mode preserves view
+    // Reapply stored zoom/pan transform - IMPORTANT: preserve k/x/y values without margin offset
     if (zoomTransformRef.current) {
-      zoomRoot.attr('transform', zoomTransformRef.current as any);
+      const currentTransform = zoomTransformRef.current;
+      // Apply zoom scale and pan without margin - the margin is already in the inner g
+      zoomRoot.attr('transform', `translate(${currentTransform.x},${currentTransform.y}) scale(${currentTransform.k})`);
     }
 
     // Add background
@@ -407,19 +409,22 @@ const DRVisualization: React.FC = () => {
       });
     }
 
-    // Add zoom behavior (only if selection tools disabled)
-    if (!brushEnabled && !lassoEnabled) {
-      const zoom = d3.zoom<SVGSVGElement, unknown>()
-        .on('zoom', (event) => {
+    // Add zoom behavior (always available, not disabled during selection tool use)
+    // The zoom behavior is independent of selection tools and will be managed by disabling/enabling event listeners
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .on('zoom', (event) => {
+        // Only apply zoom transform if selection tools are disabled
+        if (!brushEnabled && !lassoEnabled) {
           zoomRoot.attr('transform', event.transform);
           zoomTransformRef.current = event.transform;
-        });
+        }
+      });
 
-      svg.call(zoom as any);
-      
-      if (zoomTransformRef.current) {
-        svg.call((zoom.transform as any), zoomTransformRef.current);
-      }
+    // Always attach zoom to SVG but it's only active when selection tools are disabled
+    svg.call(zoom as any);
+    
+    if (zoomTransformRef.current && !brushEnabled && !lassoEnabled) {
+      svg.call((zoom.transform as any), zoomTransformRef.current);
     }
 
     // Add rectangular brush for range selection
