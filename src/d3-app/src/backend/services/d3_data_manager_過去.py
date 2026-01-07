@@ -215,45 +215,73 @@ class D3DataManager:
             }
             points.append(point)
 
-        # Load HDBSCAN condensed tree (optional for dendrogram)
-        hdbscan_file = data_path / "condensed_tree_object.pkl"
-        hdbscan_condensed_tree = None
-        linkage_matrix = None
-        old_new_id_map = {}
+        # Generate cluster metadata and labels from available data
+        cluster_meta = {}
+        cluster_names = {}
+        cluster_words = {}
         
-        if hdbscan_file.exists():
+        # Try to load from metadata file if available
+        metadata_file = data_path / "metadata.csv"
+        if metadata_file.exists():
             try:
-                with open(hdbscan_file, 'rb') as f:
-                    hdbscan_condensed_tree = pickle.load(f)
-                print(f"✓ Loaded HDBSCAN condensed tree")
-                
-                # Convert to linkage matrix format
-                linkage_matrix, old_new_id_map = self._get_linkage_matrix_from_hdbscan(
-                    hdbscan_condensed_tree
-                )
+                with open(metadata_file, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()
+                    for line in lines[1:]:  # Skip header
+                        parts = line.strip().split(',')
+                        if len(parts) >= 2:
+                            cluster_id = int(parts[0])
+                            label = parts[1] if len(parts) > 1 else f"Cluster {cluster_id}"
+                            cluster_names[cluster_id] = label
+                            cluster_words[cluster_id] = label.split()[:3]  # First 3 words
+                            cluster_meta[str(cluster_id)] = {
+                                "s": 0.8,  # Stability placeholder
+                                "h": 1,    # Strahler number
+                                "z": sum(1 for p in points if p["c"] == cluster_id)  # Size
+                            }
+                print(f"✓ Loaded cluster metadata from CSV")
             except Exception as e:
-                print(f"⚠️  Warning: Could not load HDBSCAN tree: {e}")
-        else:
-            print(f"⚠️  No condensed_tree_object.pkl found")
-            linkage_matrix = []
+                print(f"⚠️  Could not load metadata CSV: {e}")
         
-        # Load cluster metadata
-        if hdbscan_condensed_tree is not None:
-            cluster_meta = self._compute_cluster_metadata(hdbscan_condensed_tree)
-        else:
-            cluster_meta = {}
+        # If no metadata, generate default labels for clusters
+        if not cluster_names:
+            for cid in sorted(unique_clusters):
+                cluster_names[cid] = f"Cluster {cid}"
+                cluster_words[cid] = [f"cluster", f"id_{cid}"]
+                cluster_meta[str(cid)] = {
+                    "s": 0.8,
+                    "h": 1,
+                    "z": sum(1 for p in points if p["c"] == cid)
+                }
         
-        # Load cluster labels and words
-        cluster_label_file = data_path / "cluster_to_label.csv"
-        cluster_names, cluster_words = self._load_cluster_labels(cluster_label_file)
+        # Generate hierarchical linkage matrix (simple binary hierarchy)
+        cluster_list = sorted(unique_clusters)
+        linkage_matrix = []
+        node_counter = len(cluster_list)
         
-        # Build point_cluster_map from loaded data
-        point_cluster_map = {}
-        for i in range(point_count):
-            point_cluster_map[i] = int(point_cluster_labels[i])
-        
-        # Build clusterIdMap if we have old_new_id_map from HDBSCAN
-        clusterIdMap = {v: k for k, v in old_new_id_map.items()} if old_new_id_map else {}
+        # Create binary tree merging clusters pairwise
+        while len(cluster_list) > 1:
+            c1, c2 = cluster_list.pop(0), cluster_list.pop(0)
+            size1 = cluster_meta[str(c1)]["z"] if str(c1) in cluster_meta else 1
+            size2 = cluster_meta[str(c2)]["z"] if str(c2) in cluster_meta else 1
+            
+            linkage_matrix.append({
+                "child1": c1,
+                "child2": c2,
+                "distance": 0.5,  # Placeholder distance
+                "size": size1 + size2
+            })
+            
+            # Parent cluster ID
+            parent = node_counter
+            node_counter += 1
+            cluster_list.append(parent)
+            
+            # Add parent metadata
+            cluster_meta[str(parent)] = {
+                "s": 0.7,
+                "h": 2,
+                "z": size1 + size2
+            }
 
         # Cache raw arrays
         self._embedding2d = embedding
@@ -261,34 +289,13 @@ class D3DataManager:
         self._cluster_labels = point_cluster_labels
         self._hdbscan_labels = hdbscan_labels
 
-        # Convert linkage matrix (c1, c2, parent, dist, size) to JSON-compatible format
-        z_matrix = []
-        if linkage_matrix is not None and len(linkage_matrix) > 0:
-            z_matrix = [
-                {
-                    "child1": int(row[0]),
-                    "child2": int(row[1]),
-                    "parent": int(row[2]),
-                    "distance": float(row[3]),
-                    "size": int(row[4])
-                }
-                for row in linkage_matrix
-            ]
-        
-        # Count unique clusters (excluding noise = -1)
-        unique_clusters = set()
-        for i in range(point_count):
-            cluster_id = -1 if hdbscan_labels[i] == -1 else int(point_cluster_labels[i])
-            if cluster_id != -1:
-                unique_clusters.add(cluster_id)
-
         result = {
             "points": points,
-            "zMatrix": z_matrix,
+            "zMatrix": linkage_matrix,
             "clusterMeta": cluster_meta,
             "clusterNames": cluster_names,
             "clusterWords": cluster_words,
-            "clusterIdMap": clusterIdMap,
+            "clusterIdMap": {},
             "clusterSimilarities": None,
             "datasetInfo": {
                 "name": config.get("name", dataset),
@@ -371,19 +378,9 @@ class D3DataManager:
         print(f"DEBUG: Sample non_noise_cluster_ids: {list(non_noise_cluster_ids)[:10]}")
         print(f"DEBUG: full_data clusterNames keys sample: {list(full_data['clusterNames'].keys())[:10]}")
         
-        # Helper function to safely convert key to int
-        def safe_int(val):
-            if isinstance(val, (int, np.integer)):
-                return int(val)
-            elif isinstance(val, str):
-                return int(val)
-            else:
-                # If it's an array or something else, try to extract scalar
-                return int(np.asarray(val).item())
-        
         filtered_metadata = {
             cid: meta for cid, meta in full_data["clusterMeta"].items()
-            if safe_int(cid) in non_noise_cluster_ids
+            if int(cid) in non_noise_cluster_ids
         }
         
         # Update point count in datasetInfo
@@ -393,11 +390,11 @@ class D3DataManager:
             "clusterMeta": filtered_metadata,
             "clusterNames": {
                 k: v for k, v in full_data["clusterNames"].items()
-                if safe_int(k) in non_noise_cluster_ids
+                if int(k) in non_noise_cluster_ids
             },
             "clusterWords": {
                 k: v for k, v in full_data["clusterWords"].items()
-                if safe_int(k) in non_noise_cluster_ids
+                if int(k) in non_noise_cluster_ids
             },
             "clusterIdMap": full_data.get("clusterIdMap", {}),  # Include clusterIdMap from full_data
             "datasetInfo": {
@@ -1202,215 +1199,3 @@ class D3DataManager:
                 "status": "error",
                 "message": f"Internal error during zoom redraw: {str(e)}"
             }
-    
-    # ========================================================================
-    # Private helper methods for HDBSCAN data processing
-    # ========================================================================
-    
-    def _get_linkage_matrix_from_hdbscan(self, condensed_tree) -> Tuple[np.ndarray, Dict]:
-        """
-        Convert HDBSCAN condensed tree to scipy-compatible linkage matrix
-        
-        Returns:
-            Z (np.ndarray): Linkage matrix of shape (n_merges, 5) with columns
-                [child1, child2, parent, distance, cluster_size]
-            old_new_id_map (Dict): Mapping from original node IDs to contiguous IDs
-        """
-        try:
-            import pandas as pd
-            
-            print("Generating linkage matrix from HDBSCAN condensed tree...")
-            linkage_matrix = []
-            raw_tree = condensed_tree._raw_tree
-            condensed_df = condensed_tree.to_pandas()
-            
-            # Filter for merge operations (child_size > 1)
-            cluster_tree = condensed_df[condensed_df['child_size'] > 1]
-            sorted_condensed_tree = cluster_tree.sort_values(
-                by=['lambda_val', 'parent'], 
-                ascending=True
-            )
-            print(f"Processing {len(sorted_condensed_tree)} merge operations")
-            
-            # Reconstruct merge operations from sorted tree
-            for i in range(0, len(sorted_condensed_tree), 2):
-                if i + 1 < len(sorted_condensed_tree):
-                    row_a = sorted_condensed_tree.iloc[i]
-                    row_b = sorted_condensed_tree.iloc[i + 1]
-                    
-                    # Validate that pairs have same lambda and parent
-                    if row_a['lambda_val'] != row_b['lambda_val']:
-                        print(f"Warning: Lambda value mismatch at rows {i},{i+1}")
-                        continue
-                    
-                    child_a = row_a['child']
-                    child_b = row_b['child']
-                    lam = row_a['lambda_val']
-                    parent_id = row_a['parent']
-                    
-                    # Get total cluster size from raw tree
-                    total_size_rows = raw_tree[raw_tree['child'] == parent_id]['child_size']
-                    if len(total_size_rows) == 0:
-                        total_size = row_a['child_size'] + row_b['child_size']
-                    else:
-                        total_size = total_size_rows[0]
-                    
-                    linkage_matrix.append([
-                        int(child_a),
-                        int(child_b),
-                        int(parent_id),
-                        lam,
-                        int(total_size)
-                    ])
-            
-            print(f"Generated {len(linkage_matrix)} linkage operations")
-            
-            # Map leaf nodes to 0..N-1
-            old_new_id_map = {}
-            current_id = 0
-            
-            # Extract leaf nodes using helper function
-            leaves = _get_leaves(raw_tree)
-            
-            for leaf in leaves:
-                old_new_id_map[int(leaf)] = current_id
-                current_id += 1
-            
-            # Map internal nodes
-            for row in reversed(linkage_matrix):
-                parent_id = row[2]
-                if int(parent_id) not in old_new_id_map:
-                    old_new_id_map[int(parent_id)] = current_id
-                    current_id += 1
-            
-            print(f"Created node ID mapping: {len(old_new_id_map)} nodes")
-            
-            # Remap linkage matrix to contiguous IDs
-            max_lambda = max(row[3] for row in linkage_matrix) if linkage_matrix else 1.0
-            linkage_matrix_mapped = [
-                [
-                    old_new_id_map[int(row[0])],
-                    old_new_id_map[int(row[1])],
-                    old_new_id_map[int(row[2])],
-                    max_lambda - row[3],  # Invert distance
-                    row[4]  # Cluster size
-                ]
-                for row in reversed(linkage_matrix)
-            ]
-            
-            return np.array(linkage_matrix_mapped), old_new_id_map
-            
-        except Exception as e:
-            print(f"Error generating linkage matrix: {e}")
-            import traceback
-            traceback.print_exc()
-            return np.array([]), {}
-    
-    def _compute_cluster_metadata(self, hdbscan_condensed_tree) -> Dict[int, Dict]:
-        """
-        Compute stability and Strahler numbers for clusters
-        
-        Returns:
-            Dict mapping cluster ID to metadata dict with 'stability' and 'strahler'
-        """
-        try:
-            metadata = {}
-            raw_tree = hdbscan_condensed_tree._raw_tree
-            
-            # Compute stability (lambda * cluster_size for persistent clusters)
-            for row in raw_tree:
-                cluster_id = int(row['parent'])
-                stability = float(row['lambda_val'] * row['child_size'])
-                
-                if cluster_id not in metadata:
-                    metadata[cluster_id] = {
-                        'stability': stability,
-                        'strahler': 1,
-                        'size': int(row['child_size'])
-                    }
-                else:
-                    # Update with max stability
-                    metadata[cluster_id]['stability'] = max(
-                        metadata[cluster_id]['stability'],
-                        stability
-                    )
-            
-            # Compute Strahler numbers (tree depth measure)
-            def compute_strahler(cluster_id, tree_data):
-                # Find child clusters of this cluster
-                children = tree_data[tree_data['parent'] == cluster_id]['child'].unique()
-                if len(children) == 0:
-                    return 1
-                
-                strahler_values = []
-                for child in children:
-                    strahler_values.append(compute_strahler(child, tree_data))
-                
-                strahler_values.sort(reverse=True)
-                if len(strahler_values) >= 2:
-                    if strahler_values[0] == strahler_values[1]:
-                        return strahler_values[0] + 1
-                    else:
-                        return strahler_values[0]
-                elif len(strahler_values) == 1:
-                    return strahler_values[0]
-                else:
-                    return 1
-            
-            # Update Strahler numbers
-            root_cluster = raw_tree['parent'].max()
-            for cluster_id in metadata:
-                try:
-                    metadata[cluster_id]['strahler'] = compute_strahler(cluster_id, raw_tree)
-                except:
-                    metadata[cluster_id]['strahler'] = 1
-            
-            print(f"Computed metadata for {len(metadata)} clusters")
-            return metadata
-            
-        except Exception as e:
-            print(f"Error computing cluster metadata: {e}")
-            return {}
-    
-    def _load_cluster_labels(self, label_file: Path) -> Tuple[Dict[int, str], Dict[int, List[str]]]:
-        """
-        Load cluster labels and representative words from cluster_to_label.csv
-        
-        Expected CSV format:
-        cluster_id,representative_label,word1,word2,word3,...,word10
-        """
-        cluster_names: Dict[int, str] = {}
-        cluster_words: Dict[int, List[str]] = {}
-        
-        if not label_file.exists():
-            print(f"⚠️  Cluster label file not found: {label_file}")
-            return cluster_names, cluster_words
-        
-        try:
-            import csv
-            with open(label_file, 'r', encoding='utf-8') as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    cluster_id = int(row.get('cluster_id', -1))
-                    if cluster_id < 0:
-                        continue
-                    
-                    # Get representative label
-                    label = row.get('representative_label', f'Cluster {cluster_id}')
-                    cluster_names[cluster_id] = label
-                    
-                    # Collect word columns (word1, word2, ..., word10)
-                    words = []
-                    for i in range(1, 11):  # word1 to word10
-                        word_key = f'word{i}'
-                        if word_key in row and row[word_key]:
-                            words.append(row[word_key].strip())
-                    
-                    cluster_words[cluster_id] = words
-            
-            print(f"✓ Loaded labels for {len(cluster_names)} clusters")
-        except Exception as e:
-            print(f"Warning: Error loading cluster labels: {e}")
-        
-        return cluster_names, cluster_words
-
