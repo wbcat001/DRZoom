@@ -122,7 +122,12 @@ const DRVisualization: React.FC = () => {
     
     prevSelectedPointIdsRef.current = currentPointIds;
     
+    console.log('🎯 useEffect triggered - computing DR selected clusters', {
+      selectedPointIdsSize: selection.selectedPointIds.size
+    });
+    
     if (selection.selectedPointIds.size === 0) {
+      console.log('🎯 No points selected, clearing DR clusters');
       setDRSelectedClusters([]);
       return;
     }
@@ -132,7 +137,10 @@ const DRVisualization: React.FC = () => {
       .map(id => data.points.find(p => p.i === id))
       .filter((p): p is Point => p !== undefined && p.c !== -1); // Filter out undefined and noise
 
+    console.log('🎯 Filtered selected points (non-noise):', selectedPoints.length);
+
     if (selectedPoints.length === 0) {
+      console.log('🎯 All selected points are noise, clearing DR clusters');
       setDRSelectedClusters([]);
       return;
     }
@@ -143,8 +151,13 @@ const DRVisualization: React.FC = () => {
       clusterCounts.set(p.c, (clusterCounts.get(p.c) || 0) + 1);
     });
 
+    console.log('🎯 Cluster counts:', Array.from(clusterCounts.entries()).slice(0, 10));
+
     // Get cluster sizes from metadata
     const clusterSizes = new Map<number, number>();
+    console.log('🎯 clusterMetadata keys:', Object.keys(data.clusterMetadata).slice(0, 10));
+    console.log('🎯 clusterMetadata sample:', Object.entries(data.clusterMetadata).slice(0, 3));
+    
     Object.entries(data.clusterMetadata).forEach(([idStr, meta]) => {
       const id = Number(idStr);
       if (id !== -1) {
@@ -152,23 +165,29 @@ const DRVisualization: React.FC = () => {
       }
     });
 
+    console.log('🎯 clusterSizes sample:', Array.from(clusterSizes.entries()).slice(0, 10));
+
     // Filter by containment ratio
     const selectedClusters: number[] = [];
     clusterCounts.forEach((count, clusterId) => {
       const totalSize = clusterSizes.get(clusterId) || 0;
       if (totalSize > 0) {
         const containmentRatio = count / totalSize;
+        console.log(`🎯 Cluster ${clusterId}: ${count}/${totalSize} = ${containmentRatio.toFixed(3)} (threshold: ${containmentThreshold})`);
         if (containmentRatio >= containmentThreshold) {
           selectedClusters.push(clusterId);
         }
+      } else {
+        console.log(`🎯 Cluster ${clusterId}: size not found in metadata`);
       }
     });
 
-    console.log('DR selection computed locally:', {
+    console.log('🎯 DR selection computed locally:', {
       totalSelectedPoints: selectedPoints.length,
       uniqueClusters: clusterCounts.size,
       filteredClusters: selectedClusters.length,
-      threshold: containmentThreshold
+      threshold: containmentThreshold,
+      selectedClusters: selectedClusters.slice(0, 5)
     });
 
     setDRSelectedClusters(selectedClusters);
@@ -529,8 +548,21 @@ const DRVisualization: React.FC = () => {
       ...Array.from(selection.drSelectedClusterIds)
     ]);
 
+    console.log('🏷️ Annotation check:', {
+      showAnnotations,
+      selectedClusterIds: Array.from(selection.selectedClusterIds),
+      drSelectedClusterIds: Array.from(selection.drSelectedClusterIds),
+      annotationClusterIdsSize: annotationClusterIds.size
+    });
+
     if (showAnnotations && annotationClusterIds.size > 0) {
       const selectedClusterIds = Array.from(annotationClusterIds);
+
+      console.log('🏷️ Rendering annotations for clusters:', {
+        selectedClusterIds,
+        clusterNamesKeys: Object.keys(data.clusterNames),
+        sampleClusterNames: Object.entries(data.clusterNames).slice(0, 3)
+      });
 
       // Adjust font size based on zoom scale
       const zoomScale = zoomTransformRef.current?.k || 1;
@@ -545,6 +577,7 @@ const DRVisualization: React.FC = () => {
         const centroidY = d3.mean(clusterPoints, (p) => scaleFactors.yScale(p.y)) as number;
 
         const rep = (data.clusterNames[cid] || data.clusterNames[String(cid)] || '') as string;
+        console.log(`🏷️ Cluster ${cid}: rep="${rep}", found at key ${cid} or ${String(cid)}`);
         if (!rep) return;
 
         g.append('text')

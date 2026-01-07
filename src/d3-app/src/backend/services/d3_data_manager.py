@@ -240,6 +240,15 @@ class D3DataManager:
         # Load cluster metadata
         if hdbscan_condensed_tree is not None:
             cluster_meta = self._compute_cluster_metadata(hdbscan_condensed_tree)
+            # Normalize keys: 'size' -> 'z', 'stability' -> 's', 'strahler' -> 'h'
+            cluster_meta_normalized = {}
+            for cid, meta in cluster_meta.items():
+                cluster_meta_normalized[str(cid)] = {
+                    "s": float(meta.get("stability", 0)),
+                    "h": int(meta.get("strahler", 1)),
+                    "z": int(meta.get("size", 0))
+                }
+            cluster_meta = cluster_meta_normalized
         else:
             cluster_meta = {}
         
