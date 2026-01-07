@@ -1,8 +1,10 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import * as d3 from 'd3';
-import { useSelection, useData } from '../../store/useAppStore';
+import { useSelection, useData, useAppContext } from '../../store/useAppStore';
 import { computeDendrogramCoords, generateDendrogramSegments } from '../../utils/dendrogramCoords';
 import { HIGHLIGHT_COLORS } from '../../types/color';
+import { buildSimilarityMap } from '../../utils/similarity';
+import { DendrogramSortMode } from '../../types/data';
 import './Dendrogram.css';
 
 const Dendrogram: React.FC = () => {
@@ -11,6 +13,7 @@ const Dendrogram: React.FC = () => {
   const zoomTransformRef = useRef<any>(null);  // Store zoom transform
   const { selection, setDendrogramHovered, selectClusters } = useSelection();
   const { data } = useData();
+  const { state, dispatch } = useAppContext();
 
   const [proportionalWidth, setProportionalWidth] = useState(false);
   const [showLabels, setShowLabels] = useState(false);
@@ -20,7 +23,20 @@ const Dendrogram: React.FC = () => {
     visible: boolean;
     x: number;
     y: number;
-    cluster?: { id: number; name: string; size: number; stability: number; words: string[]; child1?: number; child2?: number; parent?: number };
+    cluster?: { 
+      id: number; 
+      name: string; 
+      size: number; 
+      stability: number; 
+      words: string[]; 
+      child1?: number; 
+      child2?: number; 
+      parent?: number;
+      child1Words?: string[];
+      child2Words?: string[];
+      child1Name?: string;
+      child2Name?: string;
+    };
   }>({ visible: false, x: 0, y: 0 });
 
   const margin = { top: 40, right: 20, bottom: 40, left: 40 };
@@ -59,14 +75,24 @@ const Dendrogram: React.FC = () => {
     if (data.linkageMatrix.length === 0) return null;
 
     try {
-      const coords = computeDendrogramCoords(data.linkageMatrix, data.linkageMatrix.length + 1);
+      const sortMode = state.dendrogramSortMode;
+      const similarityMap = state.clusterSimilarities
+        ? buildSimilarityMap(state.clusterSimilarities)
+        : undefined;
+      
+      const coords = computeDendrogramCoords(
+        data.linkageMatrix,
+        data.linkageMatrix.length + 1,
+        sortMode,
+        similarityMap
+      );
       const segments = generateDendrogramSegments(coords);
       return { coords, segments };
     } catch (error) {
       console.error('Error computing dendrogram:', error);
       return null;
     }
-  }, [data.linkageMatrix]);
+  }, [data.linkageMatrix, state.dendrogramSortMode, state.clusterSimilarities]);
 
   // Reverse clusterIdMap: original cluster ID -> sequential index used in linkage/coords
   const reverseClusterIdMap = useMemo(() => {
@@ -110,13 +136,6 @@ const Dendrogram: React.FC = () => {
       zoomRoot.attr('transform', zoomTransformRef.current as any);
     }
 
-    // Add background
-    g.append('rect')
-      .attr('width', width)
-      .attr('height', height)
-      .attr('fill', '#f8f9fa')
-      .attr('pointer-events', 'all');
-
     // Get coordinate ranges
     const icoordFlat = dendrogramData.coords.icoord.flat();
     const dcoordFlat = dendrogramData.coords.dcoord.flat();
@@ -129,6 +148,65 @@ const Dendrogram: React.FC = () => {
     // Create scales
     const xScale = d3.scaleLinear().domain([xMin, xMax]).range([0, width]);
     const yScale = d3.scaleLinear().domain([yMin, yMax]).range([height, 0]);
+
+    // Precompute leaf positions (x) and corresponding original cluster IDs
+    const leafXsCoord: number[] = [];
+    for (let i = 0; i < dendrogramData.coords.dcoord.length; i++) {
+      const yVals = dendrogramData.coords.dcoord[i];
+      const xVals = dendrogramData.coords.icoord[i];
+      // Left child is a leaf if y1 == 0
+      if (yVals[0] === 0) {
+        leafXsCoord.push(xVals[0]);
+      }
+      // Right child is a leaf if y4 == 0
+      if (yVals[3] === 0) {
+        leafXsCoord.push(xVals[3]);
+      }
+    }
+    // Unique and sorted by coordinate
+    const leafXsSorted = Array.from(new Set(leafXsCoord)).sort((a, b) => a - b);
+    const leafScreenXs = leafXsSorted.map((x) => xScale(x));
+    // Map sorted x order to leafOrder indices → original cluster IDs
+    const leafSeqOrder = dendrogramData.coords.leafOrder;
+    const leafOrigIds = leafSeqOrder.map((seqIdx) => (data.clusterIdMap[seqIdx] ?? seqIdx));
+
+    const leafDetectBandPx = 30; // vertical band near bottom for leaf hover detection
+
+    // Add background with leaf hover detection
+    g.append('rect')
+      .attr('width', width)
+      .attr('height', height)
+      .attr('fill', '#f8f9fa')
+      .attr('pointer-events', 'all')
+      .on('mousemove', (event) => {
+        // Detect leaf under mouse when cursor is near the leaf band (bottom area)
+        if (leafScreenXs.length === 0) return;
+        const [mx, my] = d3.pointer(event, g.node() as any);
+        if (my < height - leafDetectBandPx) return;
+        const idx = d3.bisectCenter(leafScreenXs, mx);
+        const origId = leafOrigIds[Math.max(0, Math.min(idx, leafOrigIds.length - 1))];
+
+        const rect2 = container.getBoundingClientRect();
+        const meta = (data.clusterMetadata[origId] || (data.clusterMetadata as any)[String(origId)]);
+        const name = (data.clusterNames[origId] || (data.clusterNames as any)[String(origId)] || `Cluster ${origId}`) as string;
+        const words = (data.clusterWords[origId] || (data.clusterWords as any)[String(origId)] || []) as string[];
+
+        setTooltip({
+          visible: true,
+          x: event.clientX - rect2.left + 12,
+          y: event.clientY - rect2.top - 60,
+          cluster: {
+            id: origId,
+            name,
+            size: meta?.z || 0,
+            stability: meta?.s || 0,
+            words: words.slice(0, 5)
+          }
+        });
+      })
+      .on('mouseleave', () => {
+        setTooltip({ visible: false, x: 0, y: 0 });
+      });
 
     // Draw dendrogram segments
     g.selectAll('.dendrogram-segment')
@@ -510,6 +588,17 @@ const Dendrogram: React.FC = () => {
               onChange={(e) => setBrushEnabled(e.target.checked)}
             />
             <span>Brush Selection</span>
+          </label>
+          <label className="select-label">
+            <span>Sort:</span>
+            <select
+              value={state.dendrogramSortMode}
+              onChange={(e) => dispatch({ type: 'SET_DENDROGRAM_SORT_MODE', payload: e.target.value as DendrogramSortMode })}
+            >
+              <option value="default">Default</option>
+              <option value="size">Size</option>
+              <option value="similarity">Similarity</option>
+            </select>
           </label>
         </div>
       </div>

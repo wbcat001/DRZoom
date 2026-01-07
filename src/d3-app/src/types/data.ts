@@ -107,6 +107,16 @@ export interface DendrogramCoordinates {
 }
 
 /**
+ * Dendrogram sort mode
+ */
+export type DendrogramSortMode = 'default' | 'size' | 'similarity';
+
+/**
+ * Cluster similarity entry: [clusterId1, clusterId2, distance]
+ */
+export type ClusterSimilarityEntry = [number, number, number];
+
+/**
  * Complete initial data payload from backend
  */
 export interface InitialDataPayload {
@@ -115,6 +125,7 @@ export interface InitialDataPayload {
   clusterMeta: ClusterMetaMap;
   clusterNames: Record<number, string>;
   clusterWords: Record<number, string[]>;
+  clusterSimilarities?: ClusterSimilarityEntry[];  // Optional: for similarity-based sorting
   datasetInfo: {
     name: string;
     pointCount: number;

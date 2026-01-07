@@ -12,7 +12,9 @@ import type {
   DendrogramCoordinates,
   FilterParams,
   SelectionState,
-  ZoomState
+  ZoomState,
+  ClusterSimilarityEntry,
+  DendrogramSortMode
 } from '../types';
 
 /**
@@ -28,6 +30,7 @@ export type AppAction =
         clusterNames: Record<number, string>;
         clusterWords: Record<number, string[]>;
         clusterIdMap: Record<number, number>;
+        clusterSimilarities?: ClusterSimilarityEntry[];
       };
     }
   | { type: 'SELECT_POINTS'; payload: number[] }
@@ -49,7 +52,9 @@ export type AppAction =
   | { type: 'SET_ZOOM_STATE'; payload: ZoomState }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
-  | { type: 'SET_COLOR_MODE'; payload: 'cluster' | 'distance' };
+  | { type: 'SET_COLOR_MODE'; payload: 'cluster' | 'distance' }
+  | { type: 'SET_CLUSTER_SIMILARITIES'; payload: ClusterSimilarityEntry[] | null }
+  | { type: 'SET_DENDROGRAM_SORT_MODE'; payload: DendrogramSortMode };
 /**
  * Application state
  */
@@ -60,11 +65,13 @@ export interface AppStateValue {
   clusterNames: Record<number, string>;
   clusterWords: Record<number, string[]>;
   clusterIdMap: Record<number, number>; // Dendrogram index -> actual cluster ID
+  clusterSimilarities: ClusterSimilarityEntry[] | null; // [[id1, id2, dist], ...] for sorting
   currentDataset: string;
   currentDRMethod: 'umap' | 'tsne' | 'pca';
   currentMetric: 'kl_divergence' | 'bhattacharyya_coefficient' | 'mahalanobis_distance';
   colorMode: 'cluster' | 'distance';
   dendrogramCoords: DendrogramCoordinates | null;
+  dendrogramSortMode: DendrogramSortMode;
   filterParams: FilterParams;
   selection: SelectionState;
   zoomState: ZoomState;
@@ -127,11 +134,15 @@ const initialState: AppStateValue = {
   linkageMatrix: [],
   clusterMetadata: {},
   clusterNames: {},
-  clusterWords: {},  clusterIdMap: {},  currentDataset: '',
+  clusterWords: {},
+  clusterIdMap: {},
+  clusterSimilarities: null,
+  currentDataset: '',
   currentDRMethod: 'umap',
   currentMetric: 'kl_divergence',
-    colorMode: 'cluster',
+  colorMode: 'cluster',
   dendrogramCoords: null,
+  dendrogramSortMode: 'default',
   filterParams: initializeFilterParams(),
   selection: initializeSelectionState(),
   zoomState: initializeZoomState(),
@@ -154,6 +165,7 @@ function appReducer(state: AppStateValue, action: AppAction): AppStateValue {
         clusterNames: action.payload.clusterNames,
         clusterWords: action.payload.clusterWords,
         clusterIdMap: action.payload.clusterIdMap,
+        clusterSimilarities: action.payload.clusterSimilarities || null,
         lastUpdated: Date.now()
       };
 
@@ -302,6 +314,18 @@ function appReducer(state: AppStateValue, action: AppAction): AppStateValue {
         ...state,
         error: action.payload,
         isLoading: false
+      };
+
+    case 'SET_CLUSTER_SIMILARITIES':
+      return {
+        ...state,
+        clusterSimilarities: action.payload
+      };
+
+    case 'SET_DENDROGRAM_SORT_MODE':
+      return {
+        ...state,
+        dendrogramSortMode: action.payload
       };
 
     default:

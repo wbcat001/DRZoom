@@ -4,7 +4,7 @@
  * Computes coordinates for visualizing hierarchical clustering results
  */
 
-import type { LinkageMatrix, DendrogramCoordinates } from '../types';
+import type { LinkageMatrix, DendrogramCoordinates, DendrogramSortMode } from '../types';
 
 /**
  * Node information structure for dendrogram calculation
@@ -23,11 +23,15 @@ interface DendrogramNode {
  *
  * @param Z - Linkage matrix where each row is [child1, child2, distance, size]
  * @param nPoints - Number of leaf nodes (points/clusters at base)
+ * @param sortBy - Sort mode: 'default' (no sort), 'size' (by cluster size), 'similarity' (by similarity distance)
+ * @param similarityMap - Optional map for similarity-based sorting (required when sortBy='similarity')
  * @returns Object containing icoord, dcoord, and leafOrder arrays
  */
 export function computeDendrogramCoords(
   Z: LinkageMatrix,
-  nPoints: number
+  nPoints: number,
+  sortBy: DendrogramSortMode = 'default',
+  similarityMap?: Map<string, number>
 ): DendrogramCoordinates {
   // number of nodes is 2*nPoints-1, but not directly used
   
@@ -53,7 +57,7 @@ export function computeDendrogramCoords(
   }
 
   /**
-   * Get leaf nodes order sorted by cluster size (descending)
+   * Get leaf nodes order with specified sorting strategy
    */
   function getLeafOrderSorted(nodeIdx: number): number[] {
     const node = nodes[nodeIdx];
@@ -71,14 +75,52 @@ export function computeDendrogramCoords(
     let c1Idx = node.left;
     let c2Idx = node.right;
 
-    // Swap so larger cluster comes first
-    if (leftSize < rightSize) {
-      [c1Idx, c2Idx] = [c2Idx, c1Idx];
+    // Apply sorting strategy
+    if (sortBy === 'size') {
+      // Size-based: larger cluster first
+      if (leftSize < rightSize) {
+        [c1Idx, c2Idx] = [c2Idx, c1Idx];
+      }
+    } else if (sortBy === 'similarity' && similarityMap) {
+      // Similarity-based: recursively calculate average similarity to parent's sibling
+      // If this is challenging, use a simpler heuristic: prefer subtree with higher inter-cluster similarity
+      // For now, we use size as a proxy when similarity data is incomplete
+      // TODO: Implement full similarity-based ordering
+      const leftSim = getSubtreeSimilarity(node.left, similarityMap);
+      const rightSim = getSubtreeSimilarity(node.right, similarityMap);
+      // Higher similarity score → place first (closer together)
+      if (leftSim < rightSim) {
+        [c1Idx, c2Idx] = [c2Idx, c1Idx];
+      }
     }
+    // else: default ordering (keep original left-right)
 
     const orderLeft = getLeafOrderSorted(c1Idx);
     const orderRight = getLeafOrderSorted(c2Idx);
     return [...orderLeft, ...orderRight];
+  }
+
+  /**
+   * Helper: Calculate average inter-cluster similarity for a subtree
+   * Returns average distance (lower = more similar)
+   */
+  function getSubtreeSimilarity(nodeIdx: number, simMap: Map<string, number>): number {
+    const leaves = getLeafOrderSorted(nodeIdx);
+    if (leaves.length <= 1) return 0;
+    
+    // Calculate average pairwise similarity among leaves in this subtree
+    let totalDist = 0;
+    let count = 0;
+    for (let i = 0; i < leaves.length; i++) {
+      for (let j = i + 1; j < leaves.length; j++) {
+        const key1 = `${leaves[i]}-${leaves[j]}`;
+        const key2 = `${leaves[j]}-${leaves[i]}`;
+        const dist = simMap.get(key1) ?? simMap.get(key2) ?? 1.0; // default to 1.0 if not found
+        totalDist += dist;
+        count++;
+      }
+    }
+    return count > 0 ? totalDist / count : 0;
   }
 
   /**

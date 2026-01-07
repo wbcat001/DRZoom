@@ -328,6 +328,21 @@ class D3DataManager:
             sample = list(clusterIdMap.items())[:5]
             print(f"DEBUG: Sample clusterIdMap entries: {sample}")
         
+        # Extract cluster similarities for dendrogram sorting from already-loaded similarity dictionary
+        cluster_similarities = None
+        if self._similarity_dict and 'mahalanobis_distance' in self._similarity_dict:
+            try:
+                metric = 'mahalanobis_distance'
+                similarity_dict = self._similarity_dict[metric]
+                # Convert (cluster_id, cluster_id) -> distance dict to [[id1, id2, distance], ...] format
+                cluster_similarities = [
+                    [id1, id2, dist]
+                    for (id1, id2), dist in similarity_dict.items()
+                ]
+                print(f"✓ Extracted cluster similarities: {len(cluster_similarities)} pairs from '{metric}'")
+            except Exception as e:
+                print(f"⚠️  Could not extract cluster similarities: {e}")
+        
         result = {
             "points": points,
             "zMatrix": z_matrix,
@@ -335,6 +350,7 @@ class D3DataManager:
             "clusterNames": cluster_names,
             "clusterWords": cluster_words,
             "clusterIdMap": clusterIdMap,  # Map dendrogram sequential index -> original cluster ID
+            "clusterSimilarities": cluster_similarities,  # [[id1, id2, distance], ...] for sorting
             "datasetInfo": {
                 "name": config["name"],
                 "pointCount": point_count,

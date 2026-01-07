@@ -109,6 +109,107 @@ Option A と同様だが、`data.linkageMatrix[leafIdx].stability` または `.s
 
 **場所**: `dendrogramCoords.ts` 35-50行目（葉の初期化）
 
+### Option C: クラスタ間類似度でソート
+
+**目標**: 類似したクラスタが隣接するようにデンドログラムを並び替える
+
+#### データ形式の選択肢
+
+**推奨: ハイブリッド形式（配列 + Map）**
+
+バックエンドからフロントへの転送:
+```typescript
+{
+  clusterSimilarities: [
+    [cluster_id_1, cluster_id_2, distance],
+    [cluster_id_1, cluster_id_3, distance],
+    ...
+  ]
+}
+```
+
+フロント内部での変換 & 使用:
+```typescript
+interface ClusterSimilarityData {
+  similarityMap: Map<string, number>;  // key: "id1-id2" (小さいIDを先に)
+}
+
+// 変換関数
+function buildSimilarityMap(pairs: [number, number, number][]): Map<string, number> {
+  const map = new Map<string, number>();
+  pairs.forEach(([id1, id2, dist]) => {
+    const key = id1 < id2 ? `${id1}-${id2}` : `${id2}-${id1}`;
+    map.set(key, dist);
+  });
+  return map;
+}
+
+// 使用例
+function getSimilarity(clusterId1: number, clusterId2: number): number {
+  const key = clusterId1 < clusterId2 
+    ? `${clusterId1}-${clusterId2}` 
+    : `${clusterId2}-${clusterId1}`;
+  return similarityMap.get(key) ?? Infinity; // 見つからない場合は最大距離
+}
+```
+
+**この形式の利点:**
+1. ✅ JSON で簡単に転送できる（配列はシリアライズしやすい）
+2. ✅ スパースデータに対してメモリ効率が良い（必要なペアのみ保存）
+3. ✅ TypeScript で扱いやすい（Map のルックアップは O(1)）
+4. ✅ 対称性を自動処理（(a,b) と (b,a) を区別しない）
+5. ✅ 欠損値の処理が簡単（getで undefined なら Infinity）
+
+**他の選択肢との比較:**
+
+| 形式 | メリット | デメリット | 推奨度 |
+|------|---------|-----------|--------|
+| **配列+Map** | バランス良好、実装簡単 | - | ⭐⭐⭐ |
+| 完全行列 `number[][]` | アクセス単純 | メモリ大（N²）、JSON肥大化 | ⭐ |
+| ネストMap `Map<number, Map<number, number>>` | TypeScript的 | JSON変換が面倒 | ⭐⭐ |
+| 辞書 `{[key: string]: number}` | JSON互換 | キー生成が冗長 | ⭐⭐ |
+
+#### ソートアルゴリズムの実装
+
+デンドログラムの各マージノードで、左右の子をソート:
+
+```typescript
+function sortChildrenBySimilarity(
+  leftClusterId: number,
+  rightClusterId: number,
+  referenceClusterId: number,  // 親や隣接ノードのID
+  similarityMap: Map<string, number>
+): [number, number] {
+  const leftSim = getSimilarity(leftClusterId, referenceClusterId);
+  const rightSim = getSimilarity(rightClusterId, referenceClusterId);
+  
+  // 類似度が高い（距離が小さい）方を referenceCluster に近い側に配置
+  return leftSim < rightSim 
+    ? [leftClusterId, rightClusterId]
+    : [rightClusterId, leftClusterId];
+}
+```
+
+**実装箇所:**
+- `dendrogramCoords.ts` の `computeDendrogramCoords` 関数内
+- ノードを走査する際に、子ノードの順序を類似度に基づいて決定
+
+#### データサイズの考慮
+
+**クラスタ数とデータ量の関係:**
+
+| クラスタ数 | 全組み合わせ数 | 配列サイズ (JSON) | メモリ使用量 |
+|-----------|--------------|-----------------|-------------|
+| 100 | 4,950 | ~150 KB | 小 |
+| 500 | 124,750 | ~3.7 MB | 中 |
+| 1,000 | 499,500 | ~15 MB | 大 |
+| 5,000 | 12,497,500 | ~375 MB | 非常に大 |
+
+**対策:**
+- 1,000 クラスタ以下: 全組み合わせを送っても問題なし
+- それ以上: Top-K 類似（各クラスタにつき最も近い K 個のみ）に絞る
+- または: クライアント側でオンデマンド計算（必要なペアのみAPIで取得）
+
 ---
 
 ## 影響分析：他に何が壊れるか？
@@ -196,6 +297,15 @@ D3 レンダリング (セグメント、葉)
 - [ ] 色付け/安定度フィルタリングが動作する
 - [ ] mergeIdx の範囲外エラーがコンソールに出ない
 - [ ] ソートモードを切り替えるとビューがスムーズに更新される
+
+### 類似度ソート固有のテスト
+
+- [ ] バックエンドから `clusterSimilarities` データが正しく返る
+- [ ] `buildSimilarityMap` が配列を Map に正しく変換する
+- [ ] `getSimilarity(a, b)` と `getSimilarity(b, a)` が同じ値を返す
+- [ ] 類似度データがない組み合わせは Infinity を返す
+- [ ] 類似度順にソートされた結果、似たクラスタが隣接している
+- [ ] 類似度行列のサイズが大きくてもパフォーマンスが劣化しない
 
 ---
 
