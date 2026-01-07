@@ -1,11 +1,12 @@
-import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback, useContext } from 'react';
 import * as d3 from 'd3';
-import { useSelection, useData, useUIState } from '../../store/useAppStore';
+import { useSelection, useData, useUIState, useViewConfig, AppContext } from '../../store/useAppStore';
 import { Point } from '../../types';
 import { determinePointHighlight, isAnySelectionActive, createScaleFactors } from '../../utils';
 import { getElementStyle } from '../../types/color';
 import { apiClient } from '../../api/client';
 import { LassoSelection } from '../../utils/lassoSelection';
+import { encodeVectorsToBase64, decodeBase64ToCoordinates } from '../../utils/base64';
 import SearchBar from '../SearchBar/SearchBar';
 import './DRVisualization.css';
 
@@ -14,7 +15,8 @@ const DRVisualization: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const circlesRef = useRef<any>(null);
   const { selection, selectClusters, selectPoints, setDRSelectedClusters, setNearbyClusterIds } = useSelection();
-  const { data } = useData();
+  const { data, updatePointCoordinates, setZoomMode } = useData();
+  const { config } = useViewConfig();
   const { setError } = useUIState();
   const [, setDimensions] = useState({ width: 0, height: 0 });
   const [interactionMode, setInteractionMode] = useState<'point' | 'cluster'>('point');
@@ -24,9 +26,34 @@ const DRVisualization: React.FC = () => {
   const [showHoverWords, setShowHoverWords] = useState<boolean>(true);
   const [showAnnotations, setShowAnnotations] = useState<boolean>(true);
   const [containmentThreshold, setContainmentThreshold] = useState<number>(0.1);
+  const [isZoomProcessing, setIsZoomProcessing] = useState<boolean>(false);
   const lassoRef = useRef<LassoSelection | null>(null);
   const prevSelectedPointIdsRef = useRef<string>('');
   const zoomTransformRef = useRef<any>(null);
+  
+  // Get zoom state from context
+  const appContext = useContext(AppContext);
+  const isZoomedMode = appContext?.state.isZoomed || false;
+  const zoomedPointIds = appContext?.state.zoomedPointIds || [];
+  
+  // Filter display points based on zoom mode
+  const displayData = useMemo(() => {
+    console.log('displayData recalculating', {
+      isZoomedMode,
+      zoomedPointIds: zoomedPointIds.length,
+      dataPointsTotal: data.points.length
+    });
+    if (isZoomedMode && zoomedPointIds.length > 0) {
+      const filtered = {
+        ...data,
+        points: data.points.filter(p => zoomedPointIds.includes(p.i))
+      };
+      console.log('Zoom mode filtered to', filtered.points.length, 'points');
+      return filtered;
+    }
+    console.log('Normal mode with all data points:', data.points.length);
+    return data;
+  }, [data, isZoomedMode, zoomedPointIds]);
   const [tooltip, setTooltip] = useState<{
     visible: boolean;
     x: number;
@@ -152,9 +179,125 @@ const DRVisualization: React.FC = () => {
     applyNearbyStroke();
   }, [applyNearbyStroke]);
 
+  // Handle zoom redraw for selected points
+  const handleZoomRedraw = useCallback(async () => {
+    if (selection.selectedPointIds.size === 0) {
+      setError('No points selected. Please select points first.');
+      return;
+    }
+
+    setIsZoomProcessing(true);
+    try {
+      // Get selected points data
+      const selectedPoints = data.points.filter(p => selection.selectedPointIds.has(p.i));
+
+      if (selectedPoints.length === 0) {
+        throw new Error('No valid points found in selection');
+      }
+
+      // Extract high-dimensional vectors and current 2D coordinates
+      let vectors = selectedPoints.map(p => (p as any).v).filter((v: any) => Array.isArray(v) && v.length > 0);
+      const currentCoords = selectedPoints.map(p => [p.x, p.y]);
+
+      // If vectors are not present on points, fetch from backend lazily
+      if (vectors.length !== selectedPoints.length) {
+        const datasetId = config.currentDataset || 'default';
+        const vectorResponse = await apiClient.fetchPointVectors({
+          point_ids: selectedPoints.map(p => p.i),
+          dataset: datasetId
+        });
+
+        if (!vectorResponse.success || !vectorResponse.vectors) {
+          throw new Error(vectorResponse.message || 'Failed to fetch high-dimensional vectors');
+        }
+
+        vectors = vectorResponse.vectors;
+      }
+
+      console.log(`Zoom redraw: ${selectedPoints.length} points`, {
+        vectorDim: vectors[0]?.length ?? 0,
+        coordsSample: currentCoords.slice(0, 3)
+      });
+
+      // Encode to Base64
+      const vectors_b64 = encodeVectorsToBase64(vectors);
+      const initial_embedding_b64 = encodeVectorsToBase64(currentCoords);
+
+      // Call UMAP server
+      const response = await apiClient.zoomRedraw({
+        vectors_b64,
+        initial_embedding_b64,
+        n_components: 2,
+        n_neighbors: Math.min(15, selectedPoints.length - 1),
+        min_dist: 0.1,
+        metric: 'euclidean',
+        n_epochs: 200
+      });
+
+      if (response.status === 'success' && response.coordinates) {
+        // Decode new coordinates
+        const newCoords = decodeBase64ToCoordinates(
+          response.coordinates,
+          selectedPoints.length,
+          2
+        );
+
+        console.log('Zoom redraw success:', {
+          newCoordsSample: newCoords.slice(0, 3),
+          shape: response.shape
+        });
+
+          // Update data store with new coordinates
+          const updates = selectedPoints.map((point, idx) => ({
+            pointId: point.i,
+            x: newCoords[idx][0],
+            y: newCoords[idx][1]
+          }));
+
+          updatePointCoordinates(updates);
+
+          // Enter zoom mode - display only selected points
+          setZoomMode(true, Array.from(selection.selectedPointIds));
+
+          // Reset zoom/pan so updated points stay in view
+          zoomTransformRef.current = null;
+          
+          // Force SVG zoom state reset by creating identity transform
+          if (svgRef.current) {
+            const svg = d3.select(svgRef.current);
+            const zoom = d3.zoom<SVGSVGElement, unknown>()
+              .on('zoom', () => {/* noop for reset */});
+            svg.call((zoom.transform as any), d3.zoomIdentity);
+            console.log('Reset SVG zoom transform to identity');
+          }
+          
+          console.log(`Successfully updated ${updates.length} point coordinates`);
+      } else {
+        throw new Error(response.message || 'Zoom redraw failed');
+      }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.error('Zoom redraw error:', errorMsg);
+      setError(`Zoom redraw failed: ${errorMsg}`);
+    } finally {
+      setIsZoomProcessing(false);
+    }
+    }, [selection.selectedPointIds, data.points, updatePointCoordinates, setError, config.currentDataset]);
+
   // Main D3 rendering logic
   useEffect(() => {
-    if (!svgRef.current || !containerRef.current || data.points.length === 0) return;
+    console.log('D3 rendering triggered', {
+      hasRef: !!svgRef.current,
+      hasContainer: !!containerRef.current,
+      pointsCount: displayData.points.length,
+      isZoomedMode,
+      zoomedPointIds: zoomedPointIds.length
+    });
+
+    if (!svgRef.current || !containerRef.current || displayData.points.length === 0) {
+      console.log('Early return from D3 rendering');
+      return;
+    }
 
     const svg = d3.select(svgRef.current);
     const container = containerRef.current;
@@ -171,8 +314,14 @@ const DRVisualization: React.FC = () => {
     // Remove existing content
     svg.selectAll('g').remove();
 
-    // Create scales
-    const scaleFactors = createScaleFactors(data.points, width, height, 0);
+    // Create scales - always recalculate to handle coordinate updates from zoom redraw
+    console.log('Recalculating scales for data points (count=%d)', displayData.points.length);
+    const scaleFactors = createScaleFactors(displayData.points, width, height, 0);
+    
+    // Debug: log scale domain and range
+    const xDomain = (scaleFactors.xScale.domain ? scaleFactors.xScale.domain() : 'no domain');
+    const yDomain = (scaleFactors.yScale.domain ? scaleFactors.yScale.domain() : 'no domain');
+    console.log('Scale domains - X:', xDomain, 'Y:', yDomain);
 
     // Create zoom root and plot group (keep margin separate from zoom transform)
     const zoomRoot = svg.append('g');
@@ -194,7 +343,7 @@ const DRVisualization: React.FC = () => {
       .attr('pointer-events', 'all');
 
     // Color scale for clusters
-    const clusterIds = Array.from(new Set(data.points.map((p) => p.c)));
+    const clusterIds = Array.from(new Set(displayData.points.map((p) => p.c)));
     const colorScale = d3.scaleOrdinal()
       .domain(clusterIds.map((id) => id.toString()))
       .range(d3.schemeCategory10);
@@ -209,10 +358,15 @@ const DRVisualization: React.FC = () => {
 
     // Draw points
     const circles = g.selectAll('.data-point')
-      .data(data.points, (d: any) => d.i)
-      .enter()
-      .append('circle')
-      .attr('class', 'data-point')
+      .data(displayData.points, (d: any) => d.i)
+      .join(
+        (enter) =>
+          enter
+            .append('circle')
+            .attr('class', 'data-point'),
+        (update) => update,
+        (exit) => exit.remove()
+      )
       .attr('cx', (d) => scaleFactors.xScale(d.x))
       .attr('cy', (d) => scaleFactors.yScale(d.y))
       .attr('r', 1)
@@ -505,10 +659,8 @@ const DRVisualization: React.FC = () => {
     }
 
   }, [
-    data.points,
-    data.clusterMetadata,
-    data.clusterNames,
-    data.clusterWords,
+    data,
+    displayData,
     selection.selectedClusterIds,
     selection.selectedPointIds,
     selection.drSelectedClusterIds,
@@ -617,6 +769,29 @@ const DRVisualization: React.FC = () => {
               />
               <span>Cluster annotations</span>
             </label>
+            <button
+              className="zoom-redraw-button"
+              onClick={handleZoomRedraw}
+              disabled={isZoomProcessing || selection.selectedPointIds.size === 0}
+              style={{
+                marginLeft: '10px',
+                padding: '6px 12px',
+                backgroundColor: selection.selectedPointIds.size === 0 ? '#ccc' : '#2C7BE5',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: selection.selectedPointIds.size === 0 || isZoomProcessing ? 'not-allowed' : 'pointer',
+                fontSize: '12px',
+                fontWeight: '500'
+              }}
+              title={
+                selection.selectedPointIds.size === 0
+                  ? 'Select points first'
+                  : `Recalculate UMAP for ${selection.selectedPointIds.size} selected points`
+              }
+            >
+              {isZoomProcessing ? 'Processing...' : `Zoom Redraw (${selection.selectedPointIds.size})`}
+            </button>
           </div>
         </div>
       </div>

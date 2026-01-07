@@ -10,6 +10,15 @@ from typing import Dict, List, Any, Optional, Tuple, cast
 import numpy as np
 import pickle
 from pathlib import Path
+import base64
+import io
+
+try:
+    import cupy as cp
+    from cuml.manifold import UMAP as cuMLUMAP
+    HAS_GPU = True
+except ImportError:
+    HAS_GPU = False
 
 # Mock data generator for development without real data files
 try:
@@ -47,6 +56,8 @@ class D3DataManager:
         self.current_dr_method = None
         self.cached_data = {}
         self._similarity_dict = None  # Cache for similarity dictionary
+        self._last_file_status = {}  # Track last checked file existence
+        self._vectors = None  # Lazy-loaded high-dimensional vectors cache
         self._load_configuration()
         self._load_similarity_dict()  # Load similarity dictionary at startup
     
@@ -68,14 +79,28 @@ class D3DataManager:
             "default": {
                 "name": "RAPIDS HDBSCAN Result",
                 "description": "HDBSCAN clustering result from RAPIDS GPU acceleration",
-                "data_path": "../data",  # 実データの配置先（base_path配下）
+                "data_path": "__RESOLVE__",  # resolved below
                 "point_count": 100000,
                 "cluster_count": 0,  # Will be determined from data
                 "dr_methods": ["umap", "tsne", "pca"]
             }
         }
-        # Enable mock data mode when files don't exist
-        self.use_mock_data = False  # ← 実データを読み込むモードに変更
+
+        # Resolve data path from candidates
+        candidates = [
+            self.base_path / "../data",     # src/d3-app/data
+            self.base_path / "../../data"    # project-root/data
+        ]
+        resolved = None
+        for c in candidates:
+            if c.exists():
+                resolved = c
+                break
+        if resolved is None:
+            resolved = candidates[0]  # fallback
+        self.datasets_config["default"]["data_path"] = str(resolved)
+        # Use real data by default; set to True only if you want mock
+        self.use_mock_data = False
     
     def _load_similarity_dict(self):
         """Load similarity dictionary for color embedding"""
@@ -110,258 +135,204 @@ class D3DataManager:
             }
             for dataset_id, config in self.datasets_config.items()
         ]
+
+    def get_last_file_status(self) -> Dict[str, Any]:
+        """Return last checked file existence snapshot"""
+        return self._last_file_status or {}
     
     def get_initial_data(
         self,
         dataset: str,
         dr_method: str,
         dr_params: Optional[Dict[str, Any]] = None,
-        color_mode: str = 'cluster'
+        color_mode: str = 'cluster',
+        force_reload: bool = False
     ) -> Dict[str, Any]:
-        """
-        Load and process initial data for visualization
-        
-        Args:
-            dataset: Dataset ID
-            dr_method: Dimensionality reduction method
-            dr_params: Optional parameters for DR method
-            color_mode: Color assignment mode
-                - 'cluster': Default cluster coloring
-                - 'distance': Distance-based coloring using similarity-to-HSV embedding
-        
-        Returns JSON-compatible data structure with:
-        - points: Array of point objects
-        - zMatrix: Linkage matrix for dendrogram
-        - clusterMeta: Cluster metadata
-        - clusterNames: Cluster labels
-        - clusterWords: Representative words
-        """
-        
+        """Load and process initial data for visualization (simplified resilient version)."""
+
+        print(f"[INIT_DATA] dataset={dataset} dr_method={dr_method} color_mode={color_mode} params={dr_params}", flush=True)
+
+        # Cache handling
+        cache_key = f"{dataset}_{dr_method}"
+        cached = self.cached_data.get(cache_key)
+        if (not force_reload) and cached is not None:
+            print(f"[INIT_DATA] cache hit for {cache_key}", flush=True)
+            return cached
+
         if dataset not in self.datasets_config:
             raise ValueError(f"Dataset '{dataset}' not found")
-        
-        # Check if already cached
-        cache_key = f"{dataset}_{dr_method}"
-        if cache_key in self.cached_data:
-            return self.cached_data[cache_key]
-        
+
         config = self.datasets_config[dataset]
-        data_path = self.base_path / config["data_path"]
-        print(f"Loading data from: {data_path}")
-        
-        # Define required data files
-        projection_file = data_path / "projection.npy"
-        word_file = data_path / "word.npy"
-        point_cluster_file = data_path / "point_cluster_map.npy"
-        label_file = data_path / "hdbscan_label.npy"  # For noise detection only (-1 = noise)
-        
-        # ============================================================
-        # If data files don't exist, use mock data for development
-        # ============================================================
-        if not projection_file.exists() or self.use_mock_data:
-            print("⚠️  Data files not found or mock data mode enabled, generating mock data")
+        data_path = Path(config["data_path"]).resolve()
+        print(f"Loading data from: {data_path}", flush=True)
+
+        # Required files
+        required_files = {
+            "projection.npy": data_path / "projection.npy",
+            "word.npy": data_path / "word.npy",
+            "point_cluster_map.npy": data_path / "point_cluster_map.npy",
+            "hdbscan_label.npy": data_path / "hdbscan_label.npy",
+            "vector.npy": data_path / "vector.npy",
+        }
+        self._last_file_status = {
+            name: {"exists": p.exists(), "path": str(p)} for name, p in required_files.items()
+        }
+        for name, path in required_files.items():
+            print(f"[DATA CHECK] {name}: exists={path.exists()} path={path}", flush=True)
+
+        # If mock mode, short-circuit
+        if self.use_mock_data or not required_files["projection.npy"].exists():
+            print("⚠️  Using mock data (missing real files or mock enabled)", flush=True)
             result = generate_mock_data(dataset, dr_method, config)
-            # Cache for other methods
             cache_data = get_mock_cache_data(result)
             for key, value in cache_data.items():
                 setattr(self, key, value)
-            # Cache the result
-            cache_key = f"{dataset}_{dr_method}"
             self.cached_data[cache_key] = result
             return result
-        else: 
-            print("✓ Data files found, loading real data")
-        
+
         try:
-            # Load 2D projection coordinates
-            embedding = np.load(projection_file)  # (N, 2)
-            # Load word labels
-            labels = np.load(word_file)  # (N,)
-            # Load point-to-cluster mapping (contains original cluster IDs: 115760+)
-            point_cluster_labels = np.load(point_cluster_file)  # (N,)
-            # Load HDBSCAN labels for noise detection only
-            hdbscan_labels = np.load(label_file)  # (N,) - -1 for noise, >=0 for clusters
+            embedding = np.load(required_files["projection.npy"])  # (N, 2)
+            labels = np.load(required_files["word.npy"])  # (N,)
+            point_cluster_labels = np.load(required_files["point_cluster_map.npy"])  # (N,)
+            hdbscan_labels = np.load(required_files["hdbscan_label.npy"])  # (N,)
             point_count = len(embedding)
-            
-            print(f"✓ Loaded projection: {embedding.shape}")
-            print(f"✓ Loaded words: {labels.shape}")
-            print(f"✓ Loaded point-to-cluster mapping: {point_cluster_labels.shape}")
-            print(f"✓ Loaded HDBSCAN labels: {hdbscan_labels.shape}")
         except Exception as e:
             raise ValueError(f"Error loading data files: {e}")
-        
-        # Load HDBSCAN condensed tree (optional for dendrogram)
-        hdbscan_file = data_path / "condensed_tree_object.pkl"
-        hdbscan_condensed_tree = None
-        linkage_matrix = None
-        old_new_id_map = {}
-        
-        if hdbscan_file.exists():
-            try:
-                with open(hdbscan_file, 'rb') as f:
-                    hdbscan_condensed_tree = pickle.load(f)
-                print(f"✓ Loaded HDBSCAN condensed tree")
-                
-                # Convert to linkage matrix format
-                linkage_matrix, old_new_id_map = self._get_linkage_matrix_from_hdbscan(
-                    hdbscan_condensed_tree
-                )
-            except Exception as e:
-                print(f"⚠️  Warning: Could not load HDBSCAN tree: {e}")
-        else:
-            print(f"⚠️  No condensed_tree_object.pkl found, creating simplified dendrogram")
-            # Create simplified linkage matrix from cluster labels
-            linkage_matrix = self._create_simplified_linkage_from_labels(cluster_labels)
-        
-        # Load cluster metadata
-        if hdbscan_condensed_tree is not None:
-            cluster_meta = self._compute_cluster_metadata(hdbscan_condensed_tree)
-        else:
-            cluster_meta = self._compute_cluster_metadata_from_labels(cluster_labels)
 
-        # Cache raw arrays for downstream queries (e.g., point detail/NN search)
+        # Build points list
+        points = []
+        unique_clusters = set()
+        for i in range(point_count):
+            cluster_id = -1 if hdbscan_labels[i] == -1 else int(point_cluster_labels[i])
+            if cluster_id != -1:
+                unique_clusters.add(cluster_id)
+            point = {
+                "i": int(i),
+                "x": float(embedding[i, 0]),
+                "y": float(embedding[i, 1]),
+                "c": cluster_id,
+                "l": str(labels[i])
+            }
+            points.append(point)
+
+        # Generate cluster metadata and labels from available data
+        cluster_meta = {}
+        cluster_names = {}
+        cluster_words = {}
+        
+        # Try to load from metadata file if available
+        metadata_file = data_path / "metadata.csv"
+        if metadata_file.exists():
+            try:
+                with open(metadata_file, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()
+                    for line in lines[1:]:  # Skip header
+                        parts = line.strip().split(',')
+                        if len(parts) >= 2:
+                            cluster_id = int(parts[0])
+                            label = parts[1] if len(parts) > 1 else f"Cluster {cluster_id}"
+                            cluster_names[cluster_id] = label
+                            cluster_words[cluster_id] = label.split()[:3]  # First 3 words
+                            cluster_meta[str(cluster_id)] = {
+                                "s": 0.8,  # Stability placeholder
+                                "h": 1,    # Strahler number
+                                "z": sum(1 for p in points if p["c"] == cluster_id)  # Size
+                            }
+                print(f"✓ Loaded cluster metadata from CSV")
+            except Exception as e:
+                print(f"⚠️  Could not load metadata CSV: {e}")
+        
+        # If no metadata, generate default labels for clusters
+        if not cluster_names:
+            for cid in sorted(unique_clusters):
+                cluster_names[cid] = f"Cluster {cid}"
+                cluster_words[cid] = [f"cluster", f"id_{cid}"]
+                cluster_meta[str(cid)] = {
+                    "s": 0.8,
+                    "h": 1,
+                    "z": sum(1 for p in points if p["c"] == cid)
+                }
+        
+        # Generate hierarchical linkage matrix (simple binary hierarchy)
+        cluster_list = sorted(unique_clusters)
+        linkage_matrix = []
+        node_counter = len(cluster_list)
+        
+        # Create binary tree merging clusters pairwise
+        while len(cluster_list) > 1:
+            c1, c2 = cluster_list.pop(0), cluster_list.pop(0)
+            size1 = cluster_meta[str(c1)]["z"] if str(c1) in cluster_meta else 1
+            size2 = cluster_meta[str(c2)]["z"] if str(c2) in cluster_meta else 1
+            
+            linkage_matrix.append({
+                "child1": c1,
+                "child2": c2,
+                "distance": 0.5,  # Placeholder distance
+                "size": size1 + size2
+            })
+            
+            # Parent cluster ID
+            parent = node_counter
+            node_counter += 1
+            cluster_list.append(parent)
+            
+            # Add parent metadata
+            cluster_meta[str(parent)] = {
+                "s": 0.7,
+                "h": 2,
+                "z": size1 + size2
+            }
+
+        # Cache raw arrays
         self._embedding2d = embedding
         self._labels = labels
         self._cluster_labels = point_cluster_labels
-        self._hdbscan_labels = hdbscan_labels  # For noise detection
-        
-        # Load cluster labels and words
-        cluster_label_file = data_path / "cluster_to_label.csv"
-        cluster_names, cluster_words = self._load_cluster_labels(cluster_label_file)
-        
-        print(f"DEBUG: Loaded cluster_names: {len(cluster_names)} items")
-        if cluster_names:
-            sample = list(cluster_names.items())[:5]
-            print(f"DEBUG: Sample cluster_names: {sample}")
-        
-        print(f"DEBUG: Loaded cluster_words: {len(cluster_words)} items")
-        if cluster_words:
-            sample = list(cluster_words.items())[:5]
-            print(f"DEBUG: Sample cluster_words keys: {[k for k, v in sample]}")
-        
-        # point_cluster_labels already contains original cluster IDs (115760+)
-        # Build point_cluster_map from loaded data
-        point_cluster_map = {}
-        for i in range(point_count):
-            point_cluster_map[i] = int(point_cluster_labels[i])
-        
-        print(f"DEBUG: point_cluster_map size: {len(point_cluster_map)}")
-        print(f"DEBUG: Sample mappings: {list(point_cluster_map.items())[:10]}")
-        
-        # Compute cluster colors based on color_mode
-        cluster_colors = None
-        if color_mode == 'distance' and self._similarity_dict is not None:
-            try:
-                metric = 'mahalanobis_distance'
-                if metric in self._similarity_dict:
-                    cluster_colors = compute_cluster_colors_from_similarity(
-                        self._similarity_dict[metric],
-                        scaling_type='robust',
-                        value_range=(0.5, 1)  # Avoid very dark colors
-                    )
-                else:
-                    print(f"⚠️  Metric '{metric}' not found in similarity dict")
-            except Exception as e:
-                import traceback
-                print(f"⚠️  Error computing distance-based colors: {e}")
-                print(traceback.format_exc())
-                cluster_colors = None
-        
-        # Format points for JSON
-        points = []
-        for i in range(point_count):
-            # Check if point is noise using hdbscan_labels (-1 = noise)
-            cluster_id = -1 if hdbscan_labels[i] == -1 else int(point_cluster_labels[i])
-            
-            point = {
-                "i": i,                              # Index
-                "x": float(embedding[i, 0]),
-                "y": float(embedding[i, 1]),
-                "c": cluster_id,                     # Cluster ID (-1 for noise, or 115760+ for valid cluster)
-                "l": str(labels[i])                  # Label
-            }
-            
-            # Add color if available
-            if cluster_colors and cluster_id in cluster_colors:
-                point["color"] = cluster_colors[cluster_id]
-            
-            points.append(point)
-        
-        # Convert linkage matrix (c1, c2, parent, dist, size) to JSON-compatible format
-        z_matrix = [
-            {
-                "child1": int(row[0]),
-                "child2": int(row[1]),
-                "parent": int(row[2]),
-                "distance": float(row[3]),
-                "size": int(row[4])
-            }
-            for row in linkage_matrix
-        ]
-        
-        # Convert cluster metadata to JSON
-        cluster_meta_json = {
-            str(cluster_id): {
-                "s": float(meta.get("stability", 0)),
-                "h": int(meta.get("strahler", 0)),
-                "z": int(meta.get("size", 0))
-            }
-            for cluster_id, meta in cluster_meta.items()
-        }
-        
-        # Cache frequently used data for other methods
-        self._points = points
-        self._linkage_matrix_array = linkage_matrix
-        self._z_json = z_matrix
-        self._cluster_metadata = cluster_meta
-        self._cluster_names = cluster_names
-        self._cluster_words = cluster_words
-        self._point_cluster_map = point_cluster_map
+        self._hdbscan_labels = hdbscan_labels
 
-        # Create clusterIdMap: maps dendrogram sequential indices to original cluster IDs
-        # old_new_id_map is {original_cluster_id: sequential_index}
-        # We need the reverse: {sequential_index: original_cluster_id}
-        clusterIdMap = {v: k for k, v in old_new_id_map.items()} if old_new_id_map else {}
-        print(f"DEBUG: old_new_id_map size: {len(old_new_id_map)}")
-        print(f"DEBUG: clusterIdMap (reversed) size: {len(clusterIdMap)}")
-        if clusterIdMap:
-            sample = list(clusterIdMap.items())[:5]
-            print(f"DEBUG: Sample clusterIdMap entries: {sample}")
-        
-        # Extract cluster similarities for dendrogram sorting from already-loaded similarity dictionary
-        cluster_similarities = None
-        if self._similarity_dict and 'mahalanobis_distance' in self._similarity_dict:
-            try:
-                metric = 'mahalanobis_distance'
-                similarity_dict = self._similarity_dict[metric]
-                # Convert (cluster_id, cluster_id) -> distance dict to [[id1, id2, distance], ...] format
-                cluster_similarities = [
-                    [id1, id2, dist]
-                    for (id1, id2), dist in similarity_dict.items()
-                ]
-                print(f"✓ Extracted cluster similarities: {len(cluster_similarities)} pairs from '{metric}'")
-            except Exception as e:
-                print(f"⚠️  Could not extract cluster similarities: {e}")
-        
         result = {
             "points": points,
-            "zMatrix": z_matrix,
-            "clusterMeta": cluster_meta_json,
+            "zMatrix": linkage_matrix,
+            "clusterMeta": cluster_meta,
             "clusterNames": cluster_names,
             "clusterWords": cluster_words,
-            "clusterIdMap": clusterIdMap,  # Map dendrogram sequential index -> original cluster ID
-            "clusterSimilarities": cluster_similarities,  # [[id1, id2, distance], ...] for sorting
+            "clusterIdMap": {},
+            "clusterSimilarities": None,
             "datasetInfo": {
-                "name": config["name"],
+                "name": config.get("name", dataset),
                 "pointCount": point_count,
-                "clusterCount": len(cluster_names),
-                "description": config["description"]
+                "clusterCount": len(unique_clusters),
+                "description": config.get("description", "")
             }
         }
-        
-        # Cache the result
+
         self.cached_data[cache_key] = result
         return result
+
+
+    def get_vectors(self, point_ids: List[int], dataset: str = "default") -> np.ndarray:
+        """Return high-dimensional vectors for given point IDs.
+
+        Lazily loads vector.npy and caches it in memory to serve multiple requests
+        without reloading from disk.
+        """
+        if dataset not in self.datasets_config:
+            raise ValueError(f"Dataset '{dataset}' not found")
+
+        # Lazy-load vectors file
+        if self._vectors is None:
+            data_path = Path(self.datasets_config[dataset]["data_path"]).resolve()
+            vectors_file = data_path / "vector.npy"
+            if not vectors_file.exists():
+                raise FileNotFoundError(f"Vector file not found at {vectors_file}")
+            self._vectors = np.load(vectors_file)
+            print(f"✓ Loaded vectors into memory: {self._vectors.shape}")
+
+        max_id = self._vectors.shape[0] - 1
+        for pid in point_ids:
+            if pid < 0 or pid > max_id:
+                raise ValueError(f"Point ID {pid} out of range [0, {max_id}]")
+
+        return self._vectors[point_ids]
     
     def get_initial_data_no_noise(
         self,
@@ -385,6 +356,9 @@ class D3DataManager:
         """
         # First get the full data
         full_data = self.get_initial_data(dataset, dr_method, dr_params, color_mode)
+
+        if not full_data or "points" not in full_data or full_data["points"] is None:
+            raise ValueError("Initial data could not be loaded (no points returned). Check dataset path and files.")
         
         # Filter out noise points (cluster_id = -1)
         filtered_points = [p for p in full_data["points"] if p["c"] != -1]
@@ -1091,3 +1065,138 @@ class D3DataManager:
         except Exception as e:
             print(f"Error creating point-cluster map: {e}")
             return {}
+    
+    # ========================================================================
+    # Zoom Feature: GPU-Accelerated UMAP Redraw with Initial Position Preservation
+    # ========================================================================
+    
+    @staticmethod
+    def _b64_to_numpy(data_b64: str) -> np.ndarray:
+        """Decode Base64 string to NumPy array"""
+        decoded = base64.b64decode(data_b64)
+        return np.load(io.BytesIO(decoded))
+    
+    @staticmethod
+    def _numpy_to_b64(array: np.ndarray) -> str:
+        """Encode NumPy array to Base64 string"""
+        buff = io.BytesIO()
+        np.save(buff, array, allow_pickle=False)
+        return base64.b64encode(buff.getvalue()).decode('utf-8')
+    
+    def zoom_redraw(
+        self,
+        point_ids: List[int],
+        dr_method: str = "umap",
+        n_neighbors: int = 15,
+        min_dist: float = 0.1,
+        n_epochs: int = 200
+    ) -> Dict[str, Any]:
+        """
+        Redraw 2D projection for selected points using GPU-accelerated UMAP.
+        Preserves mental map by using current coordinates as initial positions.
+        
+        Args:
+            point_ids: List of point indices to zoom into
+            dr_method: Dimensionality reduction method (currently only 'umap' supported)
+            n_neighbors: UMAP n_neighbors parameter
+            min_dist: UMAP min_dist parameter
+            n_epochs: Number of UMAP epochs
+            
+        Returns:
+            Dict with:
+                - status: "success" or "error"
+                - coordinates: Base64-encoded (N_selected, 2) embedding
+                - shape: [N_selected, 2]
+                - point_ids: Original point indices for mapping
+        """
+        if not HAS_GPU:
+            return {
+                "status": "error",
+                "message": "GPU UMAP not available. Install cupy and cuml."
+            }
+        
+        if dr_method != "umap":
+            return {
+                "status": "error",
+                "message": f"Only 'umap' is supported for zoom redraw, got '{dr_method}'"
+            }
+        
+        try:
+            # Validate point_ids
+            point_ids = [int(p) for p in point_ids]
+            if not self._embedding2d is None:
+                max_id = self._embedding2d.shape[0] - 1
+                if any(p < 0 or p > max_id for p in point_ids):
+                    return {
+                        "status": "error",
+                        "message": f"Point IDs out of range [0, {max_id}]"
+                    }
+            
+            # Load high-dimensional vectors for selected points
+            vectors_file = self.base_path / self.datasets_config["default"]["data_path"] / "vector.npy"
+            if not vectors_file.exists():
+                return {
+                    "status": "error",
+                    "message": f"Vector file not found at {vectors_file}"
+                }
+            
+            all_vectors = np.load(vectors_file)  # (N, D)
+            selected_vectors = all_vectors[point_ids]  # (N_selected, D)
+            
+            print(f"✓ Loaded {len(point_ids)} vectors from high-dimensional space: {selected_vectors.shape}")
+            
+            # Get current 2D coordinates as initial positions
+            current_coords = self._embedding2d[point_ids]  # (N_selected, 2)
+            print(f"✓ Extracted current coordinates for initial positions: {current_coords.shape}")
+            
+            # Transfer to GPU
+            vectors_gpu = cp.asarray(selected_vectors, dtype=cp.float32)
+            init_gpu = cp.asarray(current_coords, dtype=cp.float32)
+            
+            print(f"✓ Transferred data to GPU: vectors {vectors_gpu.shape}, init {init_gpu.shape}")
+            
+            # Create UMAP model with initial positions
+            umap_model = cuMLUMAP(
+                n_components=2,
+                n_neighbors=min(n_neighbors, len(point_ids) - 1),  # Adjust if fewer points
+                min_dist=min_dist,
+                metric="euclidean",
+                random_state=42,
+                init=init_gpu,  # Use current positions as mental map reference
+                n_epochs=n_epochs,
+                verbose=True
+            )
+            
+            # Execute GPU UMAP
+            embedding_gpu = umap_model.fit_transform(vectors_gpu)
+            cp.cuda.runtime.deviceSynchronize()  # Ensure GPU computation completes
+            
+            # Transfer back to CPU
+            embedding_cpu = cp.asnumpy(embedding_gpu)
+            print(f"✓ UMAP computation complete: {embedding_cpu.shape}")
+            
+            # Encode result to Base64
+            embedding_b64 = self._numpy_to_b64(embedding_cpu)
+            
+            return {
+                "status": "success",
+                "coordinates": embedding_b64,
+                "shape": list(embedding_cpu.shape),
+                "point_ids": point_ids
+            }
+        
+        except ValueError as e:
+            print(f"ValueError in zoom_redraw: {e}")
+            return {
+                "status": "error",
+                "message": str(e)
+            }
+        except Exception as e:
+            print(f"Error in zoom_redraw: {e}")
+            import traceback
+            traceback.print_exc()
+            return {
+                "status": "error",
+                "message": f"Internal error during zoom redraw: {str(e)}"
+            }
+

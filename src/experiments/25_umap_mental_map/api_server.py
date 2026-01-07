@@ -105,4 +105,4 @@ async def recalculate_umap(request: UmapRequest):
         raise HTTPException(status_code=500, detail="Internal server error during UMAP calculation.")
 
 # サーバーの起動方法:
-# uvicorn api_server:app --reload --host 0.0.0.0 --port 8000
+# uvicorn api_server:app --reload --host 0.0.0.0 --port 8001

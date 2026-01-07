@@ -13,10 +13,15 @@ import type {
   PointDetailResponse,
   DatasetsResponse,
   DendrogramFilterRequest,
-  DendrogramFilterResponse
+  DendrogramFilterResponse,
+  PointVectorsRequest,
+  PointVectorsResponse,
+  ZoomRedrawRequest,
+  ZoomRedrawResponse
 } from '../types';
 
 const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000/api';
+const ZOOM_API_URL = (import.meta as any).env?.VITE_ZOOM_API_URL || 'http://localhost:8001/api';
 
 /**
  * Generic fetch wrapper with error handling
@@ -134,6 +139,43 @@ export const apiClient = {
         stability_range: request.stabilityRange
       })
     });
+  },
+
+  /**
+   * Fetch high-dimensional vectors for selected point IDs
+   */
+  fetchPointVectors: async (request: PointVectorsRequest) => {
+    return fetchAPI<PointVectorsResponse>('/point_vectors', {
+      method: 'POST',
+      body: JSON.stringify({
+        point_ids: request.point_ids,
+        dataset: request.dataset ?? 'default'
+      })
+    });
+  },
+
+  /**
+   * Zoom/Redraw coordinates using UMAP on dedicated server
+   * Calls CPU or GPU UMAP server on port 8001
+   */
+  zoomRedraw: async (request: ZoomRedrawRequest) => {
+    const url = `${ZOOM_API_URL}/zoom/redraw`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(request)
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({
+        error: `HTTP ${response.status}`
+      }));
+      throw new Error(JSON.stringify(error));
+    }
+
+    return response.json() as Promise<ZoomRedrawResponse>;
   }
 };
 

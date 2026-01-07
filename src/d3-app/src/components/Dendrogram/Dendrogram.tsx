@@ -72,7 +72,16 @@ const Dendrogram: React.FC = () => {
 
   // Compute dendrogram coordinates
   const dendrogramData = useMemo(() => {
-    if (data.linkageMatrix.length === 0) return null;
+    console.log('dendrogramData computing', {
+      linkageMatrixLength: data.linkageMatrix.length,
+      dendrogramSortMode: state.dendrogramSortMode,
+      hasClusterSimilarities: !!state.clusterSimilarities
+    });
+
+    if (data.linkageMatrix.length === 0) {
+      console.log('dendrogramData: early return - empty linkageMatrix');
+      return null;
+    }
 
     try {
       const sortMode = state.dendrogramSortMode;
@@ -87,9 +96,13 @@ const Dendrogram: React.FC = () => {
         similarityMap
       );
       const segments = generateDendrogramSegments(coords);
+      console.log('dendrogramData: computed successfully', {
+        coordsLength: coords.dcoord.length,
+        segmentsLength: segments.length
+      });
       return { coords, segments };
     } catch (error) {
-      console.error('Error computing dendrogram:', error);
+      console.error('dendrogramData: Error computing dendrogram:', error);
       return null;
     }
   }, [data.linkageMatrix, state.dendrogramSortMode, state.clusterSimilarities]);
@@ -109,7 +122,23 @@ const Dendrogram: React.FC = () => {
 
   // Main D3 rendering logic
   useEffect(() => {
-    if (!svgRef.current || !containerRef.current || !dendrogramData) return;
+    console.log('Dendrogram useEffect triggered', {
+      hasSvgRef: !!svgRef.current,
+      hasContainerRef: !!containerRef.current,
+      hasDendrogramData: !!dendrogramData,
+      linkageMatrixLength: data.linkageMatrix.length
+    });
+
+    if (!svgRef.current || !containerRef.current || !dendrogramData) {
+      console.log('Dendrogram early return:', {
+        noSvg: !svgRef.current,
+        noContainer: !containerRef.current,
+        noData: !dendrogramData
+      });
+      return;
+    }
+
+    console.log('Dendrogram rendering START');
 
     const svg = d3.select(svgRef.current);
     const container = containerRef.current;
@@ -558,6 +587,7 @@ const Dendrogram: React.FC = () => {
       }
     }
 
+    console.log('Dendrogram rendering COMPLETE');
   }, [dendrogramData, selection, margin, brushEnabled, selectClusters, setDendrogramHovered]);
 
   return (

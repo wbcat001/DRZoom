@@ -42,6 +42,9 @@ export type AppAction =
   | { type: 'SET_NEARBY_CLUSTERS'; payload: number[] }
   | { type: 'SET_SEARCH_QUERY'; payload: string }
   | { type: 'SET_SEARCH_RESULTS'; payload: number[] }
+  | { type: 'SET_ZOOM_TARGET'; payload: { pointIds?: number[], clusterIds?: number[] } }
+  | { type: 'CLEAR_ZOOM_TARGET' }
+  | { type: 'SET_ZOOM_ACTIVE'; payload: boolean }
   | { type: 'SET_DR_METHOD'; payload: 'umap' | 'tsne' | 'pca' }
   | {
       type: 'SET_CURRENT_METRIC';
@@ -54,7 +57,9 @@ export type AppAction =
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_COLOR_MODE'; payload: 'cluster' | 'distance' }
   | { type: 'SET_CLUSTER_SIMILARITIES'; payload: ClusterSimilarityEntry[] | null }
-  | { type: 'SET_DENDROGRAM_SORT_MODE'; payload: DendrogramSortMode };
+    | { type: 'SET_DENDROGRAM_SORT_MODE'; payload: DendrogramSortMode }
+  | { type: 'UPDATE_POINT_COORDINATES'; payload: { pointId: number; x: number; y: number }[] }
+  | { type: 'SET_ZOOM_MODE'; payload: { isZoomed: boolean; zoomedPointIds: number[] } };
 /**
  * Application state
  */
@@ -70,6 +75,8 @@ export interface AppStateValue {
   currentDRMethod: 'umap' | 'tsne' | 'pca';
   currentMetric: 'kl_divergence' | 'bhattacharyya_coefficient' | 'mahalanobis_distance';
   colorMode: 'cluster' | 'distance';
+  isZoomed: boolean;
+  zoomedPointIds: number[];
   dendrogramCoords: DendrogramCoordinates | null;
   dendrogramSortMode: DendrogramSortMode;
   filterParams: FilterParams;
@@ -105,6 +112,9 @@ const initializeSelectionState = (): SelectionState => ({
   nearbyClusterIds: new Set(),
   searchQuery: '',
   searchResultPointIds: new Set(),
+  zoomTargetPoints: new Set(),
+  zoomTargetClusters: new Set(),
+  isZoomActive: false,
   lastInteractionSource: 'none',
   lastInteractionTime: 0
 });
@@ -141,6 +151,8 @@ const initialState: AppStateValue = {
   currentDRMethod: 'umap',
   currentMetric: 'kl_divergence',
   colorMode: 'cluster',
+  isZoomed: false,
+  zoomedPointIds: [],
   dendrogramCoords: null,
   dendrogramSortMode: 'default',
   filterParams: initializeFilterParams(),
@@ -262,6 +274,42 @@ function appReducer(state: AppStateValue, action: AppAction): AppStateValue {
         }
       };
 
+    case 'SET_ZOOM_TARGET':
+      return {
+        ...state,
+        selection: {
+          ...state.selection,
+          zoomTargetPoints: new Set(action.payload.pointIds || []),
+          zoomTargetClusters: new Set(action.payload.clusterIds || []),
+          lastInteractionSource: 'none',
+          lastInteractionTime: Date.now()
+        }
+      };
+
+    case 'CLEAR_ZOOM_TARGET':
+      return {
+        ...state,
+        selection: {
+          ...state.selection,
+          zoomTargetPoints: new Set(),
+          zoomTargetClusters: new Set(),
+          isZoomActive: false,
+          lastInteractionSource: 'none',
+          lastInteractionTime: Date.now()
+        }
+      };
+
+    case 'SET_ZOOM_ACTIVE':
+      return {
+        ...state,
+        selection: {
+          ...state.selection,
+          isZoomActive: action.payload,
+          lastInteractionSource: 'none',
+          lastInteractionTime: Date.now()
+        }
+      };
+
     case 'SET_DR_METHOD':
       return {
         ...state,
@@ -328,6 +376,27 @@ function appReducer(state: AppStateValue, action: AppAction): AppStateValue {
         dendrogramSortMode: action.payload
       };
 
+      case 'UPDATE_POINT_COORDINATES':
+        const updatedPoints = state.points.map(point => {
+          const update = action.payload.find(u => u.pointId === point.i);
+          if (update) {
+            return { ...point, x: update.x, y: update.y };
+          }
+          return point;
+        });
+        return {
+          ...state,
+          points: updatedPoints,
+          lastUpdated: Date.now()
+        };
+
+      case 'SET_ZOOM_MODE':
+        return {
+          ...state,
+          isZoomed: action.payload.isZoomed,
+          zoomedPointIds: action.payload.zoomedPointIds
+        };
+
     default:
       return state;
   }
@@ -372,7 +441,29 @@ export const useSelection = () => {
     setDendrogramHovered: (clusterId: number | null) => dispatch({ type: 'SET_DENDROGRAM_HOVERED', payload: clusterId }),
     setNearbyClusterIds: (clusterIds: number[]) => dispatch({ type: 'SET_NEARBY_CLUSTERS', payload: clusterIds }),
     setSearchQuery: (query: string) => dispatch({ type: 'SET_SEARCH_QUERY', payload: query }),
-    setSearchResults: (pointIds: number[]) => dispatch({ type: 'SET_SEARCH_RESULTS', payload: pointIds })
+    setSearchResults: (pointIds: number[]) => dispatch({ type: 'SET_SEARCH_RESULTS', payload: pointIds }),
+    // Zoom feature
+    setZoomTarget: (pointIds?: number[], clusterIds?: number[]) => 
+      dispatch({ type: 'SET_ZOOM_TARGET', payload: { pointIds, clusterIds } }),
+    clearZoomTarget: () => dispatch({ type: 'CLEAR_ZOOM_TARGET' }),
+    setZoomActive: (isActive: boolean) => dispatch({ type: 'SET_ZOOM_ACTIVE', payload: isActive }),
+    // Helper: determine zoom target points based on priority
+    getZoomTargetPoints: (data: { points: Point[] }): number[] => {
+      const { selection } = state;
+      // Priority: selectedPointIds > selectedClusterIds > drSelectedClusterIds
+      if (selection.selectedPointIds.size > 0) {
+        return Array.from(selection.selectedPointIds);
+      } else if (selection.selectedClusterIds.size > 0) {
+        return data.points
+          .filter(p => selection.selectedClusterIds.has(p.c))
+          .map(p => p.i);
+      } else if (selection.drSelectedClusterIds.size > 0) {
+        return data.points
+          .filter(p => selection.drSelectedClusterIds.has(p.c))
+          .map(p => p.i);
+      }
+      return [];
+    }
   };
 };
 
@@ -397,11 +488,22 @@ export const useData = () => {
       clusterNames: Record<number, string>,
       clusterWords: Record<number, string[]>,
       clusterIdMap: Record<number, number>
-    ) =>
+    ) => {
+      console.log('🔄 useData: setData called with payload', {
+        pointsLength: points.length,
+        linkageMatrixLength: linkageMatrix.length,
+        clusterMetadataKeys: Object.keys(clusterMetadata).length,
+        clusterIdMapKeys: Object.keys(clusterIdMap).length
+      });
       dispatch({
         type: 'SET_DATA',
         payload: { points, linkageMatrix, clusterMetadata, clusterNames, clusterWords, clusterIdMap }
-      })
+      });
+    },
+    updatePointCoordinates: (updates: { pointId: number; x: number; y: number }[]) =>
+      dispatch({ type: 'UPDATE_POINT_COORDINATES', payload: updates }),
+    setZoomMode: (isZoomed: boolean, zoomedPointIds: number[]) =>
+      dispatch({ type: 'SET_ZOOM_MODE', payload: { isZoomed, zoomedPointIds } })
   };
 };
 

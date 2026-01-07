@@ -24,10 +24,17 @@ except Exception:  # pragma: no cover
 app = FastAPI(title="D3 Cluster Explorer API", version="1.0.0")
 
 # Add CORS middleware
+ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000"
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure as needed
-    allow_credentials=True,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -73,6 +80,13 @@ class ClusterDetailResponse(BaseModel):
     strahler: int
     size: int
     related_clusters: List[Dict[str, Any]]
+
+
+class PointVectorsRequest(BaseModel):
+    """Request model for fetching high-dimensional vectors"""
+    point_ids: List[int]
+    dataset: Optional[str] = "default"
+
 
 
 # ============================================================================
@@ -140,6 +154,21 @@ async def get_initial_data(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/api/point_vectors")
+async def get_point_vectors(request: PointVectorsRequest):
+    """Fetch high-dimensional vectors for given point IDs"""
+    try:
+        vectors = data_manager.get_vectors(request.point_ids, dataset=request.dataset)
+        return {
+            "success": True,
+            "vectors": vectors.tolist(),
+            "shape": list(vectors.shape),
+            "timestamp": data_manager.get_timestamp()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/api/initial_data_no_noise")
 async def get_initial_data_no_noise(
     dataset: str = Query(...),
@@ -181,7 +210,21 @@ async def get_initial_data_no_noise(
             "timestamp": data_manager.get_timestamp()
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # Surface clearer error to client instead of failing inside CORS middleware
+        # Collect last data path info if available
+        try:
+            cfg = data_manager.datasets_config.get(dataset, {})
+            dp = cfg.get("data_path", "unknown")
+            file_status = data_manager.get_last_file_status()
+        except Exception:
+            dp = "unknown"
+            file_status = {}
+        print(f"[INIT_DATA_NO_NOISE][ERROR] dataset={dataset} dr_method={dr_method} data_path={dp} error={e}", flush=True)
+        raise HTTPException(status_code=500, detail={
+            "message": f"initial_data_no_noise failed: {e}",
+            "data_path": dp,
+            "file_status": file_status
+        })
 
 
 @app.post("/api/point_to_cluster")

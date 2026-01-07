@@ -117,6 +117,43 @@ export interface DendrogramFilterResponse {
 }
 
 /**
+ * POST /api/point_vectors
+ * Fetch high-dimensional vectors for selected point IDs
+ */
+export interface PointVectorsRequest {
+  point_ids: number[];
+  dataset?: string;
+}
+
+export interface PointVectorsResponse {
+  success: boolean;
+  vectors?: number[][];
+  shape?: [number, number];
+  message?: string;
+}
+
+/**
+ * POST /api/zoom/redraw (CPU/GPU UMAP Server on port 8001)
+ * Recalculates 2D coordinates for selected points using UMAP
+ */
+export interface ZoomRedrawRequest {
+  vectors_b64: string;           // Base64-encoded high-dimensional vectors
+  initial_embedding_b64?: string; // Base64-encoded initial 2D coordinates (optional, for mental map preservation)
+  n_components?: number;          // Number of dimensions (default: 2)
+  n_neighbors?: number;           // UMAP n_neighbors (default: 15)
+  min_dist?: number;              // UMAP min_dist (default: 0.1)
+  metric?: string;                // Distance metric (default: "euclidean")
+  n_epochs?: number;              // UMAP training epochs (default: 200)
+}
+
+export interface ZoomRedrawResponse {
+  status: 'success' | 'error';
+  coordinates?: string;  // Base64-encoded (N, 2) array
+  shape?: [number, number];
+  message?: string;
+}
+
+/**
  * Generic error response
  */
 export interface ErrorResponse {

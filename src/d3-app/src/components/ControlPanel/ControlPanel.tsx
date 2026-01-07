@@ -75,6 +75,13 @@ const ControlPanel: React.FC = () => {
 
       if (response.success) {
         // Update app state with fetched data
+        console.log('📥 ControlPanel: Data loaded from API', {
+          pointsLength: response.data.points.length,
+          zMatrixLength: response.data.zMatrix.length,
+          clusterMetaKeys: Object.keys(response.data.clusterMeta).length,
+          clusterNamesKeys: Object.keys(response.data.clusterNames).length
+        });
+        
         setData(
           response.data.points,
           response.data.zMatrix,
@@ -83,6 +90,7 @@ const ControlPanel: React.FC = () => {
           response.data.clusterWords,
           response.data.clusterIdMap || {}
         );
+        clearSelection();
         
         setError(null);
       } else {

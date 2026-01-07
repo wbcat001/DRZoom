@@ -46,6 +46,11 @@ export interface SelectionState {
   searchQuery: string;
   searchResultPointIds: Set<number>;
 
+  // Zoom feature selections
+  zoomTargetPoints: Set<number>;      // ズーム対象のポイントセット
+  zoomTargetClusters: Set<number>;    // ズーム対象のクラスタセット
+  isZoomActive: boolean;              // ズーム実行中フラグ
+
   // Last interaction info
   lastInteractionSource: 'dr' | 'dendrogram' | 'heatmap' | 'none';
   lastInteractionTime: number;
