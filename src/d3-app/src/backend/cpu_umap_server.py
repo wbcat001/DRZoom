@@ -3,7 +3,7 @@ CPU UMAP Zoom Server - CPU版次元削減専用APIサーバー
 GPU不要、scikit-learn の UMAP を使用してメンタルマップ保持
 
 使用方法:
-  uvicorn cpu_umap_server:app --host 0.0.0.0 --port 8002
+  uvicorn cpu_umap_server:app --host 0.0.0.0 --port 8001
 """
 
 from fastapi import FastAPI, HTTPException
