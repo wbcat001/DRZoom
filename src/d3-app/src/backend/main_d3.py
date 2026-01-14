@@ -357,47 +357,58 @@ async def filter_dendrogram(request: DendrogramFilterRequest):
 
 
 @app.get("/api/clusters/{cluster_id}/nearby")
-async def get_nearby_clusters(cluster_id: int):
+async def get_nearby_clusters(
+    cluster_id: int,
+    mode: str = "size_ratio",
+    min_stability: float = 30.0,
+    ratio_threshold: float = 0.8,
+    max_results: int = 100
+):
     """
     Get nearby clusters for a given cluster ID.
     
-    Currently returns a dummy list of nearby cluster IDs.
-    This is a placeholder for future implementation with actual similarity/stability logic.
+    Supports two modes:
+    1. 'stability': Traverse tree until finding parent with stability >= min_stability
+    2. 'size_ratio': Traverse tree until finding parent where size_ratio >= ratio_threshold
     
     Parameters:
     - cluster_id: The target cluster ID
+    - mode: Selection mode ("stability" or "size_ratio")
+    - min_stability: Stability threshold for mode="stability" (default 30.0)
+    - ratio_threshold: Size ratio threshold for mode="size_ratio" (default 0.8)
+    - max_results: Maximum number of clusters to return (default 100)
     
     Returns:
-    - nearbyClusterIds: List of nearby cluster IDs
+    - success: True/False
+    - data: Dict with nearby_cluster_ids, parent_id, and mode-specific metadata
+    - timestamp: Server timestamp
     """
     try:
-        # TODO: Implement actual logic to determine nearby clusters
-        # Candidates: stability-based, size-ratio-based, similarity-based, etc.
-
-        # Prefer real cluster IDs from loaded data so the frontend can highlight points
-        cluster_meta = getattr(data_manager, "_cluster_metadata", {}) or {}
-        cluster_ids = [int(cid) for cid in cluster_meta.keys() if int(cid) != cluster_id]
-
-        if cluster_ids:
-            # Sort by distance to the target cluster_id and take the nearest 120
-            nearby_ids = sorted(cluster_ids, key=lambda cid: abs(cid - cluster_id))[:120]
+        if mode == "stability":
+            result = data_manager.get_nearby_clusters_by_stability(
+                cluster_id,
+                min_stability=min_stability,
+                max_results=max_results
+            )
+            print(f"sample nearby clusters (stability mode): {result['nearby_cluster_ids'][:10]}", flush=True)
+        elif mode == "size_ratio":
+            result = data_manager.get_nearby_clusters_by_size_ratio(
+                cluster_id,
+                ratio_threshold=ratio_threshold,
+                max_results=max_results
+            )
+            print(f"sample nearby clusters (size_ratio mode): {result['nearby_cluster_ids'][:10]}", flush=True)
+            print(result, flush=True)
         else:
-            # Fallback dummy generation if metadata is unavailable
-            import random
-            random.seed(cluster_id)
-            num_nearby = random.randint(100, 200)
-            print(f"num_nearby: {num_nearby}")
-            nearby_ids = []
-            for _ in range(num_nearby):
-                offset = random.randint(-50, 50)
-                nearby_id = cluster_id + offset
-                if nearby_id > 0 and nearby_id != cluster_id:
-                    nearby_ids.append(nearby_id)
-            nearby_ids = sorted(list(set(nearby_ids)))
-
+            raise ValueError(f"Unknown mode: {mode}. Use 'stability' or 'size_ratio'")
+        
+        # Extract nearby_cluster_ids and return in format expected by frontend
+        nearby_ids = result.get("nearby_cluster_ids", [])
+        
         return {
             "success": True,
-            "nearbyClusterIds": nearby_ids,
+            "nearbyClusterIds": nearby_ids,  # Frontend expects this key
+            "metadata": result,  # Include full metadata for debugging
             "timestamp": data_manager.get_timestamp()
         }
     except Exception as e:

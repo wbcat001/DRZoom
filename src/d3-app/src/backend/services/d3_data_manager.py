@@ -58,6 +58,15 @@ class D3DataManager:
         self._similarity_dict = None  # Cache for similarity dictionary
         self._last_file_status = {}  # Track last checked file existence
         self._vectors = None  # Lazy-loaded high-dimensional vectors cache
+        
+        # Cluster inspector caches
+        self._condensed_tree = None
+        self._tree_df = None
+        self._cluster_tree = None  # Filtered tree (child_size > 1)
+        self._stability_map = None
+        self._child_to_parent = None
+        self._node_size_map = None
+        
         self._load_configuration()
         self._load_similarity_dict()  # Load similarity dictionary at startup
     
@@ -240,6 +249,8 @@ class D3DataManager:
         # Load cluster metadata
         if hdbscan_condensed_tree is not None:
             cluster_meta = self._compute_cluster_metadata(hdbscan_condensed_tree)
+            # Initialize cluster inspector for nearby cluster detection
+            self._initialize_cluster_inspector(hdbscan_condensed_tree)
             # Normalize keys: 'size' -> 'z', 'stability' -> 's', 'strahler' -> 'h'
             cluster_meta_normalized = {}
             for cid, meta in cluster_meta.items():
@@ -980,6 +991,272 @@ class D3DataManager:
             print(f"Warning: Error loading cluster labels: {e}")
         
         return cluster_names, cluster_words
+    
+    def _initialize_cluster_inspector(self, hdbscan_condensed_tree):
+        """Initialize cluster inspector data structures from HDBSCAN tree"""
+        try:
+            import pandas as pd
+            
+            # Store reference to condensed tree
+            self._condensed_tree = hdbscan_condensed_tree
+            
+            # Convert to DataFrame for easier access
+            self._tree_df = hdbscan_condensed_tree.to_pandas()
+            
+            # Compute stability map
+            self._stability_map = self._compute_stability_from_tree(hdbscan_condensed_tree)
+            
+            # Build parent-child and size maps
+            # Extract cluster tree (child_size > 1) for proper cluster hierarchy
+            cluster_tree = self._tree_df[self._tree_df['child_size'] > 1].copy()
+            
+            # Child to parent mapping (only for cluster nodes)
+            self._child_to_parent = dict(zip(
+                cluster_tree["child"].astype(int),
+                cluster_tree["parent"].astype(int)
+            ))
+            
+            # Node size map: parent node ID -> max child_size under that parent
+            # This matches the reference implementation exactly
+            self._node_size_map = cluster_tree.groupby("parent")["child_size"].max().to_dict()
+            # Convert to int keys
+            self._node_size_map = {int(k): int(v) for k, v in self._node_size_map.items()}
+            
+            # Store cluster_tree for _get_cluster_leaves_under to use
+            self._cluster_tree = cluster_tree
+            
+            print(f"✓ Initialized cluster inspector: {len(self._stability_map)} clusters, "
+                  f"{len(self._child_to_parent)} parent-child relationships")
+            print(f"  node_size_map has {len(self._node_size_map)} entries")
+            print(f"  cluster_tree has {len(cluster_tree)} rows")
+        except Exception as e:
+            print(f"⚠️  Error initializing cluster inspector: {e}")
+            import traceback
+            traceback.print_exc()
+            self._condensed_tree = None
+            self._tree_df = None
+            self._cluster_tree = None
+            self._stability_map = None
+            self._child_to_parent = None
+            self._node_size_map = None
+
+    def _compute_stability_from_tree(self, hdbscan_condensed_tree) -> Dict[int, float]:
+        """Compute stability scores for all clusters in the condensed tree"""
+        try:
+            stability_map = {}
+            raw_tree = hdbscan_condensed_tree._raw_tree
+            
+            # Group by cluster (parent) to compute stability
+            parent_to_rows = {}
+            for row in raw_tree:
+                parent_id = int(row['parent'])
+                if parent_id not in parent_to_rows:
+                    parent_to_rows[parent_id] = []
+                parent_to_rows[parent_id].append(row)
+            
+            # Compute stability as sum of lambda_val * child_size for each cluster
+            for parent_id, rows in parent_to_rows.items():
+                stability = 0.0
+                for row in rows:
+                    stability += float(row['lambda_val']) * float(row['child_size'])
+                stability_map[parent_id] = stability
+            
+            print(f"✓ Computed stability for {len(stability_map)} clusters")
+            return stability_map
+        except Exception as e:
+            print(f"⚠️  Error computing stability: {e}")
+            return {}
+
+    def _get_cluster_leaves_under(self, node_id: int) -> List[int]:
+        """Recursively get all leaf clusters under a given node"""
+        try:
+            if self._cluster_tree is None:
+                return []
+            
+            # Get children of this node (use cluster_tree, not tree_df)
+            children = self._cluster_tree[self._cluster_tree['parent'] == node_id]['child'].tolist()
+            
+            if not children:
+                # Leaf node
+                return [node_id]
+            
+            # Recursively get leaves from children
+            result = []
+            for child in children:
+                result.extend(self._get_cluster_leaves_under(int(child)))
+            
+            return result
+        except Exception as e:
+            print(f"⚠️  Error getting cluster leaves: {e}")
+            return [node_id]
+
+    def get_nearby_clusters_by_stability(
+        self,
+        cluster_id: int,
+        min_stability: float = 30.0,
+        max_results: int = 100
+    ) -> Dict[str, Any]:
+        """
+        Find nearby clusters by traversing up condensed tree until finding parent
+        with stability >= min_stability threshold
+        
+        Args:
+            cluster_id: Target cluster ID
+            min_stability: Minimum stability threshold
+            max_results: Maximum number of results to return
+            
+        Returns:
+            Dict with nearby cluster IDs and metadata
+        """
+        try:
+            if not self._child_to_parent or cluster_id not in self._child_to_parent:
+                return {
+                    "nearby_cluster_ids": [],
+                    "parent_id": -1,
+                    "mode": "stability",
+                    "threshold": min_stability,
+                    "steps": 0
+                }
+            
+            # Traverse up tree until finding parent with sufficient stability
+            current = cluster_id
+            steps = 0
+            max_steps = 100  # Prevent infinite loops
+            
+            while steps < max_steps:
+                if current not in self._child_to_parent:
+                    break
+                
+                parent = self._child_to_parent[current]
+                stability = self._stability_map.get(parent, 0.0)
+                
+                steps += 1
+                
+                if stability >= min_stability:
+                    # Found suitable parent, get all leaves under it
+                    nearby_ids = self._get_cluster_leaves_under(parent)
+                    # Remove the original cluster from results
+                    nearby_ids = [cid for cid in nearby_ids if cid != cluster_id]
+                    
+                    return {
+                        "nearby_cluster_ids": nearby_ids[:max_results],
+                        "parent_id": parent,
+                        "mode": "stability",
+                        "threshold": min_stability,
+                        "stability": stability,
+                        "steps": steps
+                    }
+                
+                current = parent
+            
+            # Reached root without finding sufficient stability
+            return {
+                "nearby_cluster_ids": [],
+                "parent_id": current,
+                "mode": "stability",
+                "threshold": min_stability,
+                "steps": steps,
+                "note": "Reached root without meeting stability threshold"
+            }
+        except Exception as e:
+            print(f"Error in get_nearby_clusters_by_stability: {e}")
+            return {
+                "nearby_cluster_ids": [],
+                "error": str(e),
+                "mode": "stability"
+            }
+
+    def get_nearby_clusters_by_size_ratio(
+        self,
+        cluster_id: int,
+        ratio_threshold: float = 0.8,
+        max_results: int = 100
+    ) -> Dict[str, Any]:
+        """
+        Find nearby clusters by traversing up condensed tree until finding parent
+        where current_size / parent_size >= ratio_threshold
+        
+        Args:
+            cluster_id: Target cluster ID
+            ratio_threshold: Minimum size ratio threshold (0.0-1.0)
+            max_results: Maximum number of results to return
+            
+        Returns:
+            Dict with nearby cluster IDs and metadata
+        """
+        try:
+            # Check only if child_to_parent exists (matching reference implementation)
+            if not self._child_to_parent:
+                print(f"[DEBUG] child_to_parent is empty for cluster {cluster_id}", flush=True)
+                return {
+                    "nearby_cluster_ids": [],
+                    "parent_id": -1,
+                    "mode": "size_ratio",
+                    "threshold": ratio_threshold,
+                    "steps": 0
+                }
+            
+            print(f"[DEBUG] Starting traversal for cluster {cluster_id}", flush=True)
+            print(f"[DEBUG] child_to_parent size: {len(self._child_to_parent)}, sample keys: {list(self._child_to_parent.keys())[:5]}", flush=True)
+            print(f"[DEBUG] node_size_map size: {len(self._node_size_map)}", flush=True)
+            print(f"[DEBUG] cluster_id {cluster_id} in child_to_parent? {cluster_id in self._child_to_parent}", flush=True)
+            print(f"[DEBUG] cluster_id {cluster_id} in node_size_map? {cluster_id in self._node_size_map}", flush=True)
+            
+            # Traverse up tree until finding parent with size ratio >= threshold
+            current = cluster_id
+            steps = 0
+            max_steps = 100
+            
+            while steps < max_steps:
+                if current not in self._child_to_parent:
+                    print(f"[DEBUG] current={current} not in child_to_parent, breaking at step {steps}", flush=True)
+                    break
+                
+                parent = self._child_to_parent[current]
+                
+                # Get sizes (matching reference implementation exactly)
+                current_size = self._node_size_map.get(current, 0)
+                parent_size = self._node_size_map.get(parent, 0)
+                
+                print(f"[DEBUG] Step {steps}: current={current}, parent={parent}, sizes: {current_size}/{parent_size}", flush=True)
+                
+                steps += 1
+                
+                if parent_size > 0 and (current_size / parent_size) >= ratio_threshold:
+                    # Found suitable parent, get all leaves under it
+                    nearby_ids = self._get_cluster_leaves_under(parent)
+                    # Remove the original cluster
+                    nearby_ids = [cid for cid in nearby_ids if cid != cluster_id]
+                    
+                    return {
+                        "nearby_cluster_ids": nearby_ids[:max_results],
+                        "parent_id": parent,
+                        "mode": "size_ratio",
+                        "threshold": ratio_threshold,
+                        "ratio": current_size / parent_size if parent_size > 0 else 0.0,
+                        "cluster_size": current_size,
+                        "parent_size": parent_size,
+                        "steps": steps
+                    }
+                
+                current = parent
+            
+            # Reached root without finding sufficient ratio
+            return {
+                "nearby_cluster_ids": [],
+                "parent_id": current,
+                "mode": "size_ratio",
+                "threshold": ratio_threshold,
+                "steps": steps,
+                "note": "Reached root without meeting size ratio threshold"
+            }
+        except Exception as e:
+            print(f"Error in get_nearby_clusters_by_size_ratio: {e}")
+            return {
+                "nearby_cluster_ids": [],
+                "error": str(e),
+                "mode": "size_ratio"
+            }
     
     def _create_simplified_linkage_from_labels(self, cluster_labels: np.ndarray) -> np.ndarray:
         """

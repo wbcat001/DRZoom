@@ -8,6 +8,7 @@ import { apiClient } from '../../api/client';
 import { LassoSelection } from '../../utils/lassoSelection';
 import { encodeVectorsToBase64, decodeBase64ToCoordinates } from '../../utils/base64';
 import SearchBar from '../SearchBar/SearchBar';
+import NearbyClusterConfig, { NearbyClusterParams } from '../NearbyClusterConfig/NearbyClusterConfig';
 import './DRVisualization.css';
 
 const DRVisualization: React.FC = () => {
@@ -27,6 +28,12 @@ const DRVisualization: React.FC = () => {
   const [showAnnotations, setShowAnnotations] = useState<boolean>(true);
   const [containmentThreshold, setContainmentThreshold] = useState<number>(0.1);
   const [isZoomProcessing, setIsZoomProcessing] = useState<boolean>(false);
+  const [nearbyClusterParams, setNearbyClusterParams] = useState<NearbyClusterParams>({
+    mode: 'size_ratio',
+    minStability: 30,
+    ratioThreshold: 0.8,
+    maxResults: 100,
+  });
   const lassoRef = useRef<LassoSelection | null>(null);
   const prevSelectedPointIdsRef = useRef<string>('');
   const zoomTransformRef = useRef<any>(null);
@@ -89,7 +96,7 @@ const DRVisualization: React.FC = () => {
 
     circlesRef.current
       .attr('stroke', (d: Point) => (selection.nearbyClusterIds.has(d.c) ? '#FF0000' : 'none'))
-      .attr('stroke-width', (d: Point) => (selection.nearbyClusterIds.has(d.c) ? 0.5 : 0));
+      .attr('stroke-width', (d: Point) => (selection.nearbyClusterIds.has(d.c) ? 1 : 0));
   }, [selection.nearbyClusterIds]);
 
   // Update dimensions on container resize
@@ -446,14 +453,36 @@ const DRVisualization: React.FC = () => {
         });
         d3.select(this).attr('r', 5).attr('stroke', '#FF0000').attr('stroke-width', 2);
 
-        // Fetch nearby clusters for this cluster
+        // Fetch nearby clusters for this cluster with configured parameters
         const clusterId = d.c;
-        fetch(`http://localhost:8000/api/clusters/${clusterId}/nearby`)
+        const params = new URLSearchParams({
+          mode: nearbyClusterParams.mode,
+          min_stability: nearbyClusterParams.minStability.toString(),
+          ratio_threshold: nearbyClusterParams.ratioThreshold.toString(),
+          max_results: nearbyClusterParams.maxResults.toString(),
+        });
+        
+        fetch(`http://localhost:8000/api/clusters/${clusterId}/nearby?${params}`)
           .then((res) => res.json())
           .then((response) => {
+            console.log(`[API Response] Full response:`, response);
             const nearbyIds = response.nearbyClusterIds || [];
             console.log(`[Nearby Clusters] Cluster ${clusterId}:`, nearbyIds);
-            setNearbyClusterIds(nearbyIds);
+            console.log(`[Nearby Clusters] Type: ${typeof nearbyIds}, isArray: ${Array.isArray(nearbyIds)}, length: ${nearbyIds.length}`);
+            console.log(`[Nearby Clusters] Params:`, {
+              mode: nearbyClusterParams.mode,
+              min_stability: nearbyClusterParams.minStability,
+              ratio_threshold: nearbyClusterParams.ratioThreshold,
+              max_results: nearbyClusterParams.maxResults,
+            });
+            
+            // Ensure it's an array
+            if (!Array.isArray(nearbyIds)) {
+              console.error(`[ERROR] nearbyIds is not an array:`, nearbyIds);
+              setNearbyClusterIds([]);
+            } else {
+              setNearbyClusterIds(nearbyIds);
+            }
           })
           .catch((error) => {
             console.error('Failed to fetch nearby clusters:', error);
@@ -802,6 +831,10 @@ const DRVisualization: React.FC = () => {
               />
               <span>Cluster annotations</span>
             </label>
+            <NearbyClusterConfig
+              params={nearbyClusterParams}
+              onParamsChange={setNearbyClusterParams}
+            />
             <button
               className="zoom-redraw-button"
               onClick={handleZoomRedraw}
