@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import './NearbyClusterConfig.css';
 
 export interface NearbyClusterParams {
+  enabled: boolean;
   mode: 'stability' | 'size_ratio';
   minStability: number;
   ratioThreshold: number;
@@ -35,6 +36,10 @@ const NearbyClusterConfig: React.FC<NearbyClusterConfigProps> = ({
     onParamsChange({ ...params, maxResults: value });
   };
 
+  const handleEnabledChange = (enabled: boolean) => {
+    onParamsChange({ ...params, enabled });
+  };
+
   return (
     <div className="nearby-cluster-config">
       <button
@@ -59,22 +64,35 @@ const NearbyClusterConfig: React.FC<NearbyClusterConfigProps> = ({
           </div>
 
           <div className="config-section">
-            <label>Mode:</label>
-            <div className="mode-buttons">
-              <button
-                className={`mode-btn ${params.mode === 'stability' ? 'active' : ''}`}
-                onClick={() => handleModeChange('stability')}
-              >
-                Stability
-              </button>
-              <button
-                className={`mode-btn ${params.mode === 'size_ratio' ? 'active' : ''}`}
-                onClick={() => handleModeChange('size_ratio')}
-              >
-                Size Ratio
-              </button>
-            </div>
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={params.enabled}
+                onChange={(e) => handleEnabledChange(e.target.checked)}
+              />
+              <span>Enable Nearby Cluster Highlight</span>
+            </label>
           </div>
+
+          {params.enabled && (
+            <>
+              <div className="config-section">
+                <label>Mode:</label>
+                <div className="mode-buttons">
+                  <button
+                    className={`mode-btn ${params.mode === 'stability' ? 'active' : ''}`}
+                    onClick={() => handleModeChange('stability')}
+                  >
+                    Stability
+                  </button>
+                  <button
+                    className={`mode-btn ${params.mode === 'size_ratio' ? 'active' : ''}`}
+                    onClick={() => handleModeChange('size_ratio')}
+                  >
+                    Size Ratio
+                  </button>
+                </div>
+              </div>
 
           {params.mode === 'stability' && (
             <div className="config-section">
@@ -157,6 +175,8 @@ const NearbyClusterConfig: React.FC<NearbyClusterConfigProps> = ({
                 : 'Find parent cluster with significant size ratio'}
             </p>
           </div>
+            </>
+          )}
         </div>
       )}
     </div>

@@ -1176,10 +1176,14 @@ class D3DataManager:
         Find nearby clusters by traversing up condensed tree until finding parent
         where current_size / parent_size >= ratio_threshold
         
+        If the number of leaf clusters under the parent exceeds max_results,
+        return the leaves under the previous level (child) instead.
+        
         Args:
             cluster_id: Target cluster ID
             ratio_threshold: Minimum size ratio threshold (0.0-1.0)
-            max_results: Maximum number of results to return
+            max_results: Maximum number of nearby clusters to return.
+                        If parent's leaves exceed this, use child's leaves instead.
             
         Returns:
             Dict with nearby cluster IDs and metadata
@@ -1204,6 +1208,7 @@ class D3DataManager:
             
             # Traverse up tree until finding parent with size ratio >= threshold
             current = cluster_id
+            previous = None  # Track previous level for fallback
             steps = 0
             max_steps = 100
             
@@ -1228,8 +1233,27 @@ class D3DataManager:
                     # Remove the original cluster
                     nearby_ids = [cid for cid in nearby_ids if cid != cluster_id]
                     
+                    # Check if results exceed max_results
+                    if len(nearby_ids) > max_results and previous is not None:
+                        # Too many results, use previous level (child) instead
+                        print(f"[DEBUG] Parent has {len(nearby_ids)} leaves > max_results={max_results}, falling back to previous level {previous}", flush=True)
+                        nearby_ids_fallback = self._get_cluster_leaves_under(previous)
+                        nearby_ids_fallback = [cid for cid in nearby_ids_fallback if cid != cluster_id]
+                        
+                        return {
+                            "nearby_cluster_ids": nearby_ids_fallback,
+                            "parent_id": previous,
+                            "mode": "size_ratio",
+                            "threshold": ratio_threshold,
+                            "ratio": current_size / parent_size if parent_size > 0 else 0.0,
+                            "cluster_size": current_size,
+                            "parent_size": parent_size,
+                            "steps": steps,
+                            "note": f"Used child level due to {len(nearby_ids)} results exceeding max_results"
+                        }
+                    
                     return {
-                        "nearby_cluster_ids": nearby_ids[:max_results],
+                        "nearby_cluster_ids": nearby_ids,
                         "parent_id": parent,
                         "mode": "size_ratio",
                         "threshold": ratio_threshold,
@@ -1239,6 +1263,7 @@ class D3DataManager:
                         "steps": steps
                     }
                 
+                previous = current  # Remember this level before moving up
                 current = parent
             
             # Reached root without finding sufficient ratio

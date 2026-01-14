@@ -223,7 +223,7 @@ const Dendrogram: React.FC = () => {
         setTooltip({
           visible: true,
           x: event.clientX - rect2.left + 12,
-          y: event.clientY - rect2.top - 60,
+          y: event.clientY - rect2.top - 30,
           cluster: {
             id: origId,
             name,
@@ -259,31 +259,19 @@ const Dendrogram: React.FC = () => {
           const isChildSelected = selection.selectedClusterIds.has(child1Id) || selection.selectedClusterIds.has(child2Id);
           const isHeatmapClicked = selection.heatmapClickedClusters.has(child1Id) || selection.heatmapClickedClusters.has(child2Id);
           const isDRChildSelected = selection.drSelectedClusterIds.has(child1Id) || selection.drSelectedClusterIds.has(child2Id);
+          const isNearbyChild = selection.nearbyClusterIds.has(child1Id) || selection.nearbyClusterIds.has(child2Id);
           const isHovered = selection.dendrogramHoveredCluster === mergeIdx;
 
-          // Priority order: heatmap_click > selectedClusterIds (direct children) > drSelectedClusterIds (direct children) > hovered > default
+          // Priority order: heatmap_click > selectedClusterIds (direct children) > nearby > drSelectedClusterIds (direct children) > hovered > default
           if (isHeatmapClicked) return HIGHLIGHT_COLORS.heatmap_click;
           if (isChildSelected) return HIGHLIGHT_COLORS.dr_selection;
+          if (isNearbyChild) return '#FF6B6B'; // Nearby cluster highlight color (red-ish)
           if (isDRChildSelected) return HIGHLIGHT_COLORS.dr_selected; // DR-derived selection
           if (isHovered) return HIGHLIGHT_COLORS.dendrogram_to_dr;
         }
         return HIGHLIGHT_COLORS.default;
       })
-      .attr('stroke-width', (d, i) => {
-        const mergeIdx = Math.floor(i / 3);
-        
-        const linkageEntry = data.linkageMatrix[mergeIdx];
-        if (linkageEntry) {
-          const child1Id = data.clusterIdMap[linkageEntry.child1] ?? linkageEntry.child1;
-          const child2Id = data.clusterIdMap[linkageEntry.child2] ?? linkageEntry.child2;
-          
-          const isHeatmapClicked = selection.heatmapClickedClusters.has(child1Id) || selection.heatmapClickedClusters.has(child2Id);
-          const isDRChildSelected = selection.drSelectedClusterIds.has(child1Id) || selection.drSelectedClusterIds.has(child2Id);
-          
-          if (isHeatmapClicked || isDRChildSelected) return 2;
-        }
-        return 1;
-      })
+      .attr('stroke-width', 1)
       .attr('opacity', (d, i) => {
         const mergeIdx = Math.floor(i / 3);
         
@@ -293,8 +281,9 @@ const Dendrogram: React.FC = () => {
           const child2Id = data.clusterIdMap[linkageEntry.child2] ?? linkageEntry.child2;
           
           const isDRChildSelected = selection.drSelectedClusterIds.has(child1Id) || selection.drSelectedClusterIds.has(child2Id);
+          const isNearbyChild = selection.nearbyClusterIds.has(child1Id) || selection.nearbyClusterIds.has(child2Id);
           
-          if (isDRChildSelected) return 0.9;
+          if (isDRChildSelected || isNearbyChild) return 1.0;
         }
         return 0.7;
       })
@@ -354,7 +343,7 @@ const Dendrogram: React.FC = () => {
         setTooltip({
           visible: true,
           x: event.clientX - rect.left + 12,
-          y: event.clientY - rect.top - 80,
+          y: event.clientY - rect.top - 30,
           cluster: {
             id: parentId,
             name: parentName,
@@ -441,10 +430,11 @@ const Dendrogram: React.FC = () => {
           });
       });
 
-    // Add annotations for clusters selected via dendrogram or DR selection
+    // Add annotations for clusters selected via dendrogram or DR selection or nearby clusters
     const annotationClusterIds = new Set<number>([
       ...Array.from(selection.selectedClusterIds),
-      ...Array.from(selection.drSelectedClusterIds)
+      ...Array.from(selection.drSelectedClusterIds),
+      ...Array.from(selection.nearbyClusterIds)
     ]);
 
     if (annotationClusterIds.size > 0) {

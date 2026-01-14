@@ -29,11 +29,13 @@ const DRVisualization: React.FC = () => {
   const [containmentThreshold, setContainmentThreshold] = useState<number>(0.1);
   const [isZoomProcessing, setIsZoomProcessing] = useState<boolean>(false);
   const [nearbyClusterParams, setNearbyClusterParams] = useState<NearbyClusterParams>({
+    enabled: false,
     mode: 'size_ratio',
     minStability: 30,
     ratioThreshold: 0.8,
     maxResults: 100,
   });
+  const [pinnedNearbyClusterIds, setPinnedNearbyClusterIds] = useState<number[]>([]);
   const lassoRef = useRef<LassoSelection | null>(null);
   const prevSelectedPointIdsRef = useRef<string>('');
   const zoomTransformRef = useRef<any>(null);
@@ -61,6 +63,15 @@ const DRVisualization: React.FC = () => {
     console.log('Normal mode with all data points:', data.points.length);
     return data;
   }, [data, isZoomedMode, zoomedPointIds]);
+
+  // Create color scale for clusters
+  const colorScale = useMemo(() => {
+    const clusterIds = Array.from(new Set(displayData.points.map((p) => p.c)));
+    return d3.scaleOrdinal()
+      .domain(clusterIds.map((id) => id.toString()))
+      .range(d3.schemeCategory10);
+  }, [displayData.points]);
+
   const [tooltip, setTooltip] = useState<{
     visible: boolean;
     x: number;
@@ -90,14 +101,47 @@ const DRVisualization: React.FC = () => {
     return ids;
   }, [selection.dendrogramHoveredCluster, data.linkageMatrix, data.clusterIdMap]);
 
-  // Apply red stroke to nearby clusters (called when nearbyClusterIds changes)
+  // Apply opacity and color highlighting to nearby clusters (called when nearbyClusterIds changes)
   const applyNearbyStroke = useCallback(() => {
     if (!circlesRef.current) return;
 
+    const hasNearbyHighlight = selection.nearbyClusterIds.size > 0;
+
+    // Update opacity
     circlesRef.current
-      .attr('stroke', (d: Point) => (selection.nearbyClusterIds.has(d.c) ? '#FF0000' : 'none'))
-      .attr('stroke-width', (d: Point) => (selection.nearbyClusterIds.has(d.c) ? 1 : 0));
-  }, [selection.nearbyClusterIds]);
+      .attr('opacity', (d: Point) => {
+        // If any nearby clusters are highlighted
+        if (hasNearbyHighlight) {
+          // Points in nearby clusters get full opacity
+          if (selection.nearbyClusterIds.has(d.c)) {
+            return 1.0;
+          }
+          // Other points get dimmed
+          return 0.15;
+        }
+        // When not highlighting, use normal opacity from style
+        const highlight = determinePointHighlight(
+          d.i,
+          d,
+          selection.selectedClusterIds,
+          selection.selectedPointIds,
+          selection.heatmapClickedClusters,
+          hoveredClusterIds.has(d.c) ? d.c : null,
+          selection.searchResultPointIds
+        );
+        const style = getElementStyle(highlight, isAnySelectionActive(
+          selection.selectedClusterIds,
+          selection.selectedPointIds,
+          selection.heatmapClickedClusters,
+          hoveredClusterIds.size > 0 ? 1 : null,
+          selection.searchResultPointIds
+        ));
+        return style.opacity || 1.0;
+      });
+      
+    // When nearby highlight is active, keep original cluster colors by not changing fill
+    // The fill was already set during initial rendering, so we just adjust opacity
+  }, [selection.nearbyClusterIds, selection.selectedClusterIds, selection.selectedPointIds, selection.heatmapClickedClusters, hoveredClusterIds, selection.searchResultPointIds]);
 
   // Update dimensions on container resize
   useEffect(() => {
@@ -200,10 +244,65 @@ const DRVisualization: React.FC = () => {
     setDRSelectedClusters(selectedClusters);
   }, [selection.selectedPointIds, data.points, data.clusterMetadata, containmentThreshold, setDRSelectedClusters]);
 
+  // Restore pinned nearby clusters if they get cleared unexpectedly
+  useEffect(() => {
+    if (nearbyClusterParams.enabled && 
+        pinnedNearbyClusterIds.length > 0 && 
+        selection.nearbyClusterIds.size === 0) {
+      console.log('🔄 Restoring pinned nearby clusters:', pinnedNearbyClusterIds);
+      setNearbyClusterIds(pinnedNearbyClusterIds);
+    }
+  }, [selection.nearbyClusterIds, pinnedNearbyClusterIds, nearbyClusterParams.enabled, setNearbyClusterIds]);
+
   // Update circle stroke when nearby clusters change
   useEffect(() => {
     applyNearbyStroke();
   }, [applyNearbyStroke]);
+
+  // Re-apply fill colors when nearby clusters change
+  useEffect(() => {
+    if (!circlesRef.current) return;
+    
+    circlesRef.current.attr('fill', function (d: any) {
+      const dendroHoverForPoint = hoveredClusterIds.has(d.c) ? d.c : null;
+      const highlight = determinePointHighlight(
+        d.i,
+        d,
+        selection.selectedClusterIds,
+        selection.selectedPointIds,
+        selection.heatmapClickedClusters,
+        dendroHoverForPoint,
+        selection.searchResultPointIds
+      );
+      const anyActive = isAnySelectionActive(
+        selection.selectedClusterIds,
+        selection.selectedPointIds,
+        selection.heatmapClickedClusters,
+        hoveredClusterIds.size > 0 ? 1 : null,
+        selection.searchResultPointIds
+      );
+      const style = getElementStyle(highlight, anyActive);
+      
+      // If nearby highlighting is active and this point is in a nearby cluster,
+      // prioritize cluster color over selection colors
+      if (selection.nearbyClusterIds.size > 0 && selection.nearbyClusterIds.has(d.c)) {
+        if (d.color) {
+          return d.color as string;
+        }
+        return colorScale(d.c.toString()) as string;
+      }
+      
+      // Otherwise use normal color logic
+      // Color priority: similarity-based > highlight style > cluster scale
+      if (d.color) {
+        return d.color as string;
+      }
+      if (style.fill) {
+        return style.fill;
+      }
+      return colorScale(d.c.toString()) as string;
+    });
+  }, [selection.nearbyClusterIds, selection.selectedClusterIds, selection.selectedPointIds, selection.heatmapClickedClusters, hoveredClusterIds, selection.searchResultPointIds, colorScale]);
 
   // Handle zoom redraw for selected points
   const handleZoomRedraw = useCallback(async () => {
@@ -345,8 +444,8 @@ const DRVisualization: React.FC = () => {
     const scaleFactors = createScaleFactors(displayData.points, width, height, 0);
     
     // Debug: log scale domain and range
-    const xDomain = (scaleFactors.xScale.domain ? scaleFactors.xScale.domain() : 'no domain');
-    const yDomain = (scaleFactors.yScale.domain ? scaleFactors.yScale.domain() : 'no domain');
+    const xDomain = ((scaleFactors.xScale as any).domain ? (scaleFactors.xScale as any).domain() : 'no domain');
+    const yDomain = ((scaleFactors.yScale as any).domain ? (scaleFactors.yScale as any).domain() : 'no domain');
     console.log('Scale domains - X:', xDomain, 'Y:', yDomain);
 
     // Create zoom root and plot group (keep margin separate from zoom transform)
@@ -366,13 +465,14 @@ const DRVisualization: React.FC = () => {
       .attr('width', width)
       .attr('height', height)
       .attr('fill', '#f8f9fa')
-      .attr('pointer-events', 'all');
-
-    // Color scale for clusters
-    const clusterIds = Array.from(new Set(displayData.points.map((p) => p.c)));
-    const colorScale = d3.scaleOrdinal()
-      .domain(clusterIds.map((id) => id.toString()))
-      .range(d3.schemeCategory10);
+      .attr('pointer-events', 'all')
+      .on('click', () => {
+        // Clear selections and pinned nearby clusters when clicking background
+        selectPoints([]);
+        selectClusters([]);
+        setPinnedNearbyClusterIds([]);
+        setNearbyClusterIds([]);
+      });
 
     // Check if any selection is active
     const anySelectionActive = isAnySelectionActive(
@@ -416,6 +516,16 @@ const DRVisualization: React.FC = () => {
         );
         const style = getElementStyle(highlight, anyActive);
         
+        // If nearby highlighting is active and this point is in a nearby cluster,
+        // prioritize cluster color over selection colors
+        if (selection.nearbyClusterIds.size > 0 && selection.nearbyClusterIds.has(d.c)) {
+          if (d.color) {
+            return d.color as string;
+          }
+          return colorScale(d.c.toString()) as string;
+        }
+        
+        // Otherwise use normal color logic
         // Color priority: similarity-based > highlight style > cluster scale
         if (d.color) {
           return d.color as string;
@@ -448,46 +558,54 @@ const DRVisualization: React.FC = () => {
         setTooltip({
           visible: true,
           x: event.clientX - rect.left + 12,
-          y: event.clientY - rect.top + 12,
+          y: event.clientY - rect.top - 40,
           point: { id: d.i, label: d.l, cluster: d.c }
         });
-        d3.select(this).attr('r', 5).attr('stroke', '#FF0000').attr('stroke-width', 2);
+        // Visual feedback: increase size and add a faint glow ring
+        d3.select(this).attr('r', 5).attr('stroke', '#FF0000').attr('stroke-width', 1).attr('opacity', 1.0);
 
-        // Fetch nearby clusters for this cluster with configured parameters
-        const clusterId = d.c;
-        const params = new URLSearchParams({
-          mode: nearbyClusterParams.mode,
-          min_stability: nearbyClusterParams.minStability.toString(),
-          ratio_threshold: nearbyClusterParams.ratioThreshold.toString(),
-          max_results: nearbyClusterParams.maxResults.toString(),
-        });
-        
-        fetch(`http://localhost:8000/api/clusters/${clusterId}/nearby?${params}`)
-          .then((res) => res.json())
-          .then((response) => {
-            console.log(`[API Response] Full response:`, response);
-            const nearbyIds = response.nearbyClusterIds || [];
-            console.log(`[Nearby Clusters] Cluster ${clusterId}:`, nearbyIds);
-            console.log(`[Nearby Clusters] Type: ${typeof nearbyIds}, isArray: ${Array.isArray(nearbyIds)}, length: ${nearbyIds.length}`);
-            console.log(`[Nearby Clusters] Params:`, {
-              mode: nearbyClusterParams.mode,
-              min_stability: nearbyClusterParams.minStability,
-              ratio_threshold: nearbyClusterParams.ratioThreshold,
-              max_results: nearbyClusterParams.maxResults,
-            });
-            
-            // Ensure it's an array
-            if (!Array.isArray(nearbyIds)) {
-              console.error(`[ERROR] nearbyIds is not an array:`, nearbyIds);
-              setNearbyClusterIds([]);
-            } else {
-              setNearbyClusterIds(nearbyIds);
-            }
-          })
-          .catch((error) => {
-            console.error('Failed to fetch nearby clusters:', error);
-            setNearbyClusterIds([]);
+        // Fetch nearby clusters if enabled
+        if (nearbyClusterParams.enabled) {
+          const clusterId = d.c;
+          const params = new URLSearchParams({
+            mode: nearbyClusterParams.mode,
+            min_stability: nearbyClusterParams.minStability.toString(),
+            ratio_threshold: nearbyClusterParams.ratioThreshold.toString(),
+            max_results: nearbyClusterParams.maxResults.toString(),
           });
+          
+          fetch(`http://localhost:8000/api/clusters/${clusterId}/nearby?${params}`)
+            .then((res) => res.json())
+            .then((response) => {
+              console.log(`[API Response] Full response:`, response);
+              const nearbyIds = response.nearbyClusterIds || [];
+              console.log(`[Nearby Clusters] Cluster ${clusterId}:`, nearbyIds);
+              console.log(`[Nearby Clusters] Type: ${typeof nearbyIds}, isArray: ${Array.isArray(nearbyIds)}, length: ${nearbyIds.length}`);
+              console.log(`[Nearby Clusters] Params:`, {
+                mode: nearbyClusterParams.mode,
+                min_stability: nearbyClusterParams.minStability,
+                ratio_threshold: nearbyClusterParams.ratioThreshold,
+                max_results: nearbyClusterParams.maxResults,
+              });
+              
+              // Ensure it's an array and include the hovered cluster itself
+              if (!Array.isArray(nearbyIds)) {
+                console.error(`[ERROR] nearbyIds is not an array:`, nearbyIds);
+                setNearbyClusterIds([clusterId]);
+              } else {
+                // Include self in the nearby cluster list
+                const nearbyWithSelf = [...nearbyIds, clusterId];
+                setNearbyClusterIds(nearbyWithSelf);
+              }
+            })
+            .catch((error) => {
+              console.error('Failed to fetch nearby clusters:', error);
+              setNearbyClusterIds([]);
+            });
+        } else {
+          // Clear nearby clusters when disabled
+          setNearbyClusterIds([]);
+        }
       })
       .on('mousemove', function (event, d: Point) {
         if (ignoreNoise && d.c === -1) return;
@@ -496,22 +614,42 @@ const DRVisualization: React.FC = () => {
           ...prev,
           visible: true,
           x: event.clientX - rect.left + 12,
-          y: event.clientY - rect.top + 12,
+          y: event.clientY - rect.top - 40,
           point: { id: d.i, label: d.l, cluster: d.c }
         }));
       })
       .on('mouseout', function () {
         d3.select(this).attr('r', 3).attr('stroke-width', 0);
         setTooltip({ visible: false, x: 0, y: 0 });
-        setNearbyClusterIds([]);
+        // Restore pinned nearby clusters instead of clearing completely
+        if (pinnedNearbyClusterIds.length > 0) {
+          setNearbyClusterIds(pinnedNearbyClusterIds);
+        } else {
+          setNearbyClusterIds([]);
+        }
+        // Re-apply normal opacity on mouseout
+        applyNearbyStroke();
       })
       .on('click', (_event, d: Point) => {
         if (ignoreNoise && d.c === -1) return;
+        
+        // Capture current nearby cluster state before selection changes
+        const currentNearbyIds = nearbyClusterParams.enabled ? [...selection.nearbyClusterIds] : [];
+        
         if (interactionMode === 'point') {
           selectPoints([d.i]);
         } else {
           selectClusters([d.c]);
           selectPoints([]);
+        }
+        
+        // Restore nearby clusters after selection if enabled
+        if (nearbyClusterParams.enabled && currentNearbyIds.length > 0) {
+          setPinnedNearbyClusterIds(currentNearbyIds);
+          // Use setTimeout to restore after selection state update
+          setTimeout(() => {
+            setNearbyClusterIds(currentNearbyIds);
+          }, 0);
         }
 
         // Copy the point's label to clipboard
@@ -570,17 +708,19 @@ const DRVisualization: React.FC = () => {
         .text((d) => d.l);
     }
 
-    // Add annotations for selected clusters (from dendrogram or DR selection)
-    // Combine manual selections and DR-derived cluster selections
+    // Add annotations for selected clusters (from dendrogram or DR selection or nearby clusters)
+    // Combine manual selections, DR-derived cluster selections, and nearby clusters
     const annotationClusterIds = new Set<number>([
       ...Array.from(selection.selectedClusterIds),
-      ...Array.from(selection.drSelectedClusterIds)
+      ...Array.from(selection.drSelectedClusterIds),
+      ...Array.from(selection.nearbyClusterIds)
     ]);
 
     console.log('🏷️ Annotation check:', {
       showAnnotations,
       selectedClusterIds: Array.from(selection.selectedClusterIds),
       drSelectedClusterIds: Array.from(selection.drSelectedClusterIds),
+      nearbyClusterIds: Array.from(selection.nearbyClusterIds),
       annotationClusterIdsSize: annotationClusterIds.size
     });
 
@@ -678,6 +818,7 @@ const DRVisualization: React.FC = () => {
           }
           console.log('Brush selected points:', selectedIds.length);
           selectPoints(selectedIds);
+          setPinnedNearbyClusterIds([]); // Clear pinned nearby clusters on new selection
           // Clear brush after selection
           brushGroup.call(brush.move as any, null);
         });
@@ -710,6 +851,7 @@ const DRVisualization: React.FC = () => {
         onEnd: (selectedIds) => {
           console.log('Lasso selection ended:', selectedIds.length, 'points');
           selectPoints(selectedIds);
+          setPinnedNearbyClusterIds([]); // Clear pinned nearby clusters on new selection
         }
       });
       
