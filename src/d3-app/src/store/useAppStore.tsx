@@ -56,6 +56,7 @@ export type AppAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_COLOR_MODE'; payload: 'cluster' | 'distance' }
+  | { type: 'SET_COLOR_METRIC'; payload: 'mahalanobis_distance' | 'kl_divergence' | 'bhattacharyya_coefficient' }
   | { type: 'SET_CLUSTER_SIMILARITIES'; payload: ClusterSimilarityEntry[] | null }
     | { type: 'SET_DENDROGRAM_SORT_MODE'; payload: DendrogramSortMode }
   | { type: 'UPDATE_POINT_COORDINATES'; payload: { pointId: number; x: number; y: number }[] }
@@ -75,6 +76,7 @@ export interface AppStateValue {
   currentDRMethod: 'umap' | 'tsne' | 'pca';
   currentMetric: 'kl_divergence' | 'bhattacharyya_coefficient' | 'mahalanobis_distance';
   colorMode: 'cluster' | 'distance';
+  colorMetric: 'mahalanobis_distance' | 'kl_divergence' | 'bhattacharyya_coefficient';
   isZoomed: boolean;
   zoomedPointIds: number[];
   dendrogramCoords: DendrogramCoordinates | null;
@@ -151,6 +153,7 @@ const initialState: AppStateValue = {
   currentDRMethod: 'umap',
   currentMetric: 'kl_divergence',
   colorMode: 'cluster',
+  colorMetric: 'mahalanobis_distance',
   isZoomed: false,
   zoomedPointIds: [],
   dendrogramCoords: null,
@@ -326,6 +329,12 @@ function appReducer(state: AppStateValue, action: AppAction): AppStateValue {
       return {
         ...state,
         colorMode: action.payload
+      };
+
+    case 'SET_COLOR_METRIC':
+      return {
+        ...state,
+        colorMetric: action.payload
       };
 
     case 'SET_FILTER_PARAMS':
@@ -518,12 +527,15 @@ export const useViewConfig = () => {
       currentDRMethod: state.currentDRMethod,
       currentMetric: state.currentMetric,
       colorMode: state.colorMode,
+      colorMetric: state.colorMetric,
       filterParams: state.filterParams
     },
     setDRMethod: (method: 'umap' | 'tsne' | 'pca') => dispatch({ type: 'SET_DR_METHOD', payload: method }),
     setCurrentMetric: (metric: 'kl_divergence' | 'bhattacharyya_coefficient' | 'mahalanobis_distance') =>
       dispatch({ type: 'SET_CURRENT_METRIC', payload: metric }),
     setColorMode: (mode: 'cluster' | 'distance') => dispatch({ type: 'SET_COLOR_MODE', payload: mode }),
+    setColorMetric: (metric: 'mahalanobis_distance' | 'kl_divergence' | 'bhattacharyya_coefficient') =>
+      dispatch({ type: 'SET_COLOR_METRIC', payload: metric }),
     setFilterParams: (params: FilterParams) => dispatch({ type: 'SET_FILTER_PARAMS', payload: params }),
     updateDendrogramCoords: (coords: DendrogramCoordinates) =>
       dispatch({ type: 'UPDATE_DENDROGRAM_COORDS', payload: coords }),

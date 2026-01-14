@@ -13,7 +13,7 @@ interface Dataset {
 const ControlPanel: React.FC = () => {
   const { data, setData } = useData();
   const { clearSelection } = useSelection();
-  const { config, setColorMode } = useViewConfig();
+  const { config, setColorMode, setColorMetric } = useViewConfig();
 
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [selectedDataset, setSelectedDataset] = useState('default');
@@ -70,7 +70,8 @@ const ControlPanel: React.FC = () => {
         selectedDataset,
         selectedDRMethod,
         drParams,
-        config.colorMode
+        config.colorMode,
+        config.colorMetric
       );
 
       if (response.success) {
@@ -171,6 +172,27 @@ const ControlPanel: React.FC = () => {
             ))}
           </div>
         </div>
+
+        {/* Color Metric Selector (only when similarity-based color is enabled) */}
+        {config.colorMode === 'distance' && (
+          <div className="form-group">
+            <label htmlFor="color-metric-select">Color Metric:</label>
+            <select
+              id="color-metric-select"
+              className="form-control"
+              value={config.colorMetric}
+              onChange={(e) => setColorMetric(e.target.value as any)}
+              disabled={isLoading}
+            >
+              <option value="mahalanobis_distance">Mahalanobis Distance</option>
+              <option value="kl_divergence">KL Divergence</option>
+              <option value="bhattacharyya_coefficient">Bhattacharyya Coefficient</option>
+              <option value="medoid_distances">Medoid Distances</option>
+              <option value="centroid_distances">Centroid Distances</option>
+              <option value="single_linkage_distances">Single Linkage Distances</option>
+            </select>
+          </div>
+        )}
 
         {/* Dynamic Parameters */}
         <div className="parameter-container">

@@ -118,7 +118,8 @@ async def get_initial_data(
     dataset: str = Query(...),
     dr_method: str = Query("umap"),
     dr_params: Optional[str] = Query(None),
-    color_mode: str = Query("cluster")
+    color_mode: str = Query("cluster"),
+    color_metric: Optional[str] = Query(None)
 ):
     """
     Get initial data for visualization
@@ -143,7 +144,7 @@ async def get_initial_data(
             dr_params_dict = json.loads(dr_params)
         
         # Get data from manager
-        data = data_manager.get_initial_data(dataset, dr_method, dr_params_dict, color_mode)
+        data = data_manager.get_initial_data(dataset, dr_method, dr_params_dict, color_mode, color_metric=color_metric)
         
         return {
             "success": True,
@@ -174,7 +175,8 @@ async def get_initial_data_no_noise(
     dataset: str = Query(...),
     dr_method: str = Query("umap"),
     dr_params: Optional[str] = Query(None),
-    color_mode: str = Query("cluster")
+    color_mode: str = Query("cluster"),
+    color_metric: Optional[str] = Query(None)
 ):
     """
     Get initial data for visualization with noise points (cluster=-1) filtered out
@@ -202,7 +204,7 @@ async def get_initial_data_no_noise(
             dr_params_dict = json.loads(dr_params)
         
         # Get data from manager (with noise filtering)
-        data = data_manager.get_initial_data_no_noise(dataset, dr_method, dr_params_dict, color_mode)
+        data = data_manager.get_initial_data_no_noise(dataset, dr_method, dr_params_dict, color_mode, color_metric=color_metric)
         
         return {
             "success": True,

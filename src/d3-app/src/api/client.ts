@@ -57,13 +57,20 @@ export const apiClient = {
    * Get initial data for visualization
    * @param colorMode - Color assignment mode: 'cluster' (default) or 'distance' (similarity-based)
    */
-  getInitialData: async (dataset: string, drMethod: string, drParams?: Record<string, any>, colorMode: string = 'cluster') => {
+  getInitialData: async (
+    dataset: string,
+    drMethod: string,
+    drParams?: Record<string, any>,
+    colorMode: string = 'cluster',
+    colorMetric?: string
+  ) => {
     const queryParams = new URLSearchParams({
       dataset,
       dr_method: drMethod,
       color_mode: colorMode,
       ...(drParams && { dr_params: JSON.stringify(drParams) })
     });
+    if (colorMetric) queryParams.set('color_metric', colorMetric);
     return fetchAPI<InitialDataResponse>(`/initial_data?${queryParams.toString()}`);
   },
 
@@ -72,13 +79,20 @@ export const apiClient = {
    * Better performance for large datasets
    * @param colorMode - Color assignment mode: 'cluster' (default) or 'distance' (similarity-based)
    */
-  getInitialDataNoNoise: async (dataset: string, drMethod: string, drParams?: Record<string, any>, colorMode: string = 'cluster') => {
+  getInitialDataNoNoise: async (
+    dataset: string,
+    drMethod: string,
+    drParams?: Record<string, any>,
+    colorMode: string = 'cluster',
+    colorMetric?: string
+  ) => {
     const queryParams = new URLSearchParams({
       dataset,
       dr_method: drMethod,
       color_mode: colorMode,
       ...(drParams && { dr_params: JSON.stringify(drParams) })
     });
+    if (colorMetric) queryParams.set('color_metric', colorMetric);
     return fetchAPI<InitialDataResponse>(`/initial_data_no_noise?${queryParams.toString()}`);
   },
 

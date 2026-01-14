@@ -43,6 +43,21 @@ def _recurse_leaf_dfs(cluster_tree, current_node):
       return [current_node,]
   else:
       return sum([_recurse_leaf_dfs(cluster_tree, child) for child in children], [])
+
+def _convert_numpy_to_python(obj: Any) -> Any:
+    """Recursively convert numpy types to Python native types for JSON serialization."""
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, (np.integer, np.floating)):
+        return obj.item()
+    elif isinstance(obj, dict):
+        # Convert both keys and values
+        return {_convert_numpy_to_python(k): _convert_numpy_to_python(v) for k, v in obj.items()}
+    elif isinstance(obj, (list, tuple)):
+        return [_convert_numpy_to_python(item) for item in obj]
+    else:
+        return obj
+
 class D3DataManager:
     """
     Manages data loading and transformation for the D3.js-based cluster explorer
@@ -155,7 +170,8 @@ class D3DataManager:
         dr_method: str,
         dr_params: Optional[Dict[str, Any]] = None,
         color_mode: str = 'cluster',
-        force_reload: bool = False
+        force_reload: bool = False,
+        color_metric: Optional[str] = None
     ) -> Dict[str, Any]:
         """Load and process initial data for visualization (simplified resilient version)."""
 
@@ -223,6 +239,78 @@ class D3DataManager:
                 "l": str(labels[i])
             }
             points.append(point)
+        # Cache points for point detail API
+        self._points = points
+
+        # Optional: assign cluster-based colors from similarity if requested
+        # color_mode can be 'cluster' (frontend categorical) or 'distance' (backend similarity-based)
+        cluster_colors: Dict[int, str] = {}
+        if color_mode in ("distance", "similarity") and len(unique_clusters) > 0:
+            try:
+                similarity_file = data_path / "cluster_similarities.pkl"
+                print(f"[COLOR_MODE] Attempting to load similarity data from: {similarity_file}", flush=True)
+                
+                if similarity_file.exists():
+                    with open(similarity_file, 'rb') as f:
+                        similarities_all = pickle.load(f)
+                    
+                    # Log available metrics
+                    available_metrics = list(similarities_all.keys()) if isinstance(similarities_all, dict) else []
+                    print(f"[COLOR_METRIC] Available metrics in pickle: {available_metrics}", flush=True)
+                    print(f"[COLOR_METRIC] Requested metric: {color_metric if color_metric else '(none - will use fallback)'}", flush=True)
+                    
+                    # Prefer a metric key if present; fallback to direct dict
+                    similarities_dict = None
+                    selected_metric = None
+                    
+                    if isinstance(similarities_all, dict):
+                        # If a specific color metric was provided and exists, use it
+                        if color_metric and color_metric in similarities_all:
+                            similarities_dict = similarities_all[color_metric]
+                            selected_metric = color_metric
+                            print(f"✓ [COLOR_METRIC] Using REQUESTED metric: '{color_metric}'", flush=True)
+                        else:
+                            # Fallback priority order
+                            print(f"[COLOR_METRIC] Requested metric not found or not provided. Trying fallback priority...", flush=True)
+                            for key in ("mahalanobis_distance", "kl_divergence", "bhattacharyya_coefficient"):
+                                if key in similarities_all:
+                                    similarities_dict = similarities_all[key]
+                                    selected_metric = key
+                                    print(f"✓ [COLOR_METRIC] Using FALLBACK metric: '{key}'", flush=True)
+                                    break
+                            
+                            # If no metric keys match, assume it's already a (c1,c2)->val dict
+                            if similarities_dict is None:
+                                similarities_dict = similarities_all
+                                selected_metric = "(direct dict - no metric key)"
+                                print(f"[COLOR_METRIC] No metric keys found. Using raw dict: {selected_metric}", flush=True)
+
+                    if isinstance(similarities_dict, dict):
+                        print(f"[COLOR_METRIC] Computing colors using metric: '{selected_metric}' with {len(similarities_dict)} similarity entries", flush=True)
+                        
+                        cluster_colors = compute_cluster_colors_from_similarity(
+                            similarities_dict,
+                            cluster_ids=list(unique_clusters),
+                            scaling_type='robust',
+                            hsv_mapping=('H', 'S', 'V'),
+                            value_range=(0.6, 1.0)  # avoid too dark values
+                        )
+
+                        # Apply colors to points if available
+                        if cluster_colors:
+                            print(f"✓ [COLOR_METRIC] Generated colors for {len(cluster_colors)} clusters", flush=True)
+                            for p in points:
+                                cid = p.get("c", -1)
+                                if cid != -1 and cid in cluster_colors:
+                                    p["color"] = cluster_colors[cid]
+                        else:
+                            print(f"⚠️  [COLOR_METRIC] No colors were generated despite valid similarity dict", flush=True)
+                else:
+                    print(f"⚠️  [COLOR_METRIC] Similarity file not found at: {similarity_file}", flush=True)
+            except Exception as e:
+                print(f"⚠️  [COLOR_METRIC] Failed to compute cluster colors: {e}", flush=True)
+                import traceback
+                traceback.print_exc()
 
         # Load HDBSCAN condensed tree (optional for dendrogram)
         hdbscan_file = data_path / "condensed_tree_object.pkl"
@@ -260,6 +348,16 @@ class D3DataManager:
                     "z": int(meta.get("size", 0))
                 }
             cluster_meta = cluster_meta_normalized
+            # Store raw integer-keyed metadata for backend computations
+            try:
+                self._cluster_metadata = {int(cid): {
+                    'stability': float(m.get('stability', 0.0)),
+                    'strahler': int(m.get('strahler', 1)),
+                    'size': int(m.get('size', m.get('z', 0)))
+                } for cid, m in ((int(k), v) for k, v in cluster_meta_normalized.items())}
+            except Exception:
+                # Best-effort assignment without breaking flow
+                self._cluster_metadata = {}
         else:
             cluster_meta = {}
         
@@ -271,6 +369,8 @@ class D3DataManager:
         point_cluster_map = {}
         for i in range(point_count):
             point_cluster_map[i] = int(point_cluster_labels[i])
+        # Cache point->cluster map for selection mapping
+        self._point_cluster_map = point_cluster_map
         
         # Build clusterIdMap if we have old_new_id_map from HDBSCAN
         clusterIdMap = {v: k for k, v in old_new_id_map.items()} if old_new_id_map else {}
@@ -310,6 +410,7 @@ class D3DataManager:
             "clusterWords": cluster_words,
             "clusterIdMap": clusterIdMap,
             "clusterSimilarities": None,
+            "clusterColors": cluster_colors,
             "datasetInfo": {
                 "name": config.get("name", dataset),
                 "pointCount": point_count,
@@ -318,6 +419,9 @@ class D3DataManager:
             }
         }
 
+        # Convert all numpy types to Python native types for JSON serialization
+        result = _convert_numpy_to_python(result)
+        
         self.cached_data[cache_key] = result
         return result
 
@@ -352,7 +456,8 @@ class D3DataManager:
         dataset: str,
         dr_method: str,
         dr_params: Optional[Dict[str, Any]] = None,
-        color_mode: str = 'cluster'
+        color_mode: str = 'cluster',
+        color_metric: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Load and process initial data for visualization with noise points filtered out
@@ -368,7 +473,7 @@ class D3DataManager:
         Returns JSON-compatible data structure with noise-filtered data
         """
         # First get the full data
-        full_data = self.get_initial_data(dataset, dr_method, dr_params, color_mode)
+        full_data = self.get_initial_data(dataset, dr_method, dr_params, color_mode, color_metric=color_metric)
 
         if not full_data or "points" not in full_data or full_data["points"] is None:
             raise ValueError("Initial data could not be loaded (no points returned). Check dataset path and files.")
@@ -420,6 +525,7 @@ class D3DataManager:
                 if safe_int(k) in non_noise_cluster_ids
             },
             "clusterIdMap": full_data.get("clusterIdMap", {}),  # Include clusterIdMap from full_data
+            "clusterColors": full_data.get("clusterColors", {}),
             "datasetInfo": {
                 **full_data["datasetInfo"],
                 "pointCount": len(new_points),
@@ -427,6 +533,9 @@ class D3DataManager:
                 "description": full_data["datasetInfo"]["description"] + " (noise filtered)"
             }
         }
+        
+        # Convert all numpy types to Python native types for JSON serialization
+        result = _convert_numpy_to_python(result)
         
         return result
     
@@ -521,20 +630,15 @@ class D3DataManager:
         Returns:
             Similarity matrix and cluster ordering
         """
-        print(f"Loading heatmap data with metric: {metric}, top_n: {top_n}")
         try:
             # Try to load precomputed similarity matrices
             data_path = self.base_path / self.datasets_config["default"]["data_path"]
             similarity_file = data_path / "cluster_similarities.pkl"
-            print(f"Loading similarity data from: {similarity_file}")
-            print(f"File exists: {similarity_file.exists()}")
             metric = "mahalanobis_distance"
             
             if similarity_file.exists():
                 with open(similarity_file, 'rb') as f:
                     similarities = pickle.load(f)[metric]
-                
-                
                 
                 # similarities is a dict with (cluster_id, cluster_id) as keys
                 # Extract unique cluster IDs
