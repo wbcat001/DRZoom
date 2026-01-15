@@ -11,6 +11,7 @@ const Dendrogram: React.FC = () => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const zoomTransformRef = useRef<any>(null);  // Store zoom transform
+  const shiftPressedRef = useRef<boolean>(false);
   const { selection, setDendrogramHovered, selectClusters } = useSelection();
   const { data } = useData();
   const { state, dispatch } = useAppContext();
@@ -68,6 +69,22 @@ const Dendrogram: React.FC = () => {
 
     resizeObserver.observe(containerRef.current);
     return () => resizeObserver.disconnect();
+  }, []);
+
+  // Track global Shift key state to support additive brush selection
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') shiftPressedRef.current = true;
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') shiftPressedRef.current = false;
+    };
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+    };
   }, []);
 
   // Compute dendrogram coordinates
@@ -493,10 +510,20 @@ const Dendrogram: React.FC = () => {
     // Add brush selection (rectangular)
     if (brushEnabled) {
       const brushGroup = g.append('g').attr('class', 'brush-layer');
+      let shiftDuringBrush = false;
       const brush = d3.brush()
         .extent([[0, 0], [width, height]])
-        .on('start brush', () => {
+        .on('start', (event: any) => {
+          // Capture Shift key at the start of the brush (check global ref as fallback)
+          shiftDuringBrush = !!((event && event.sourceEvent && event.sourceEvent.shiftKey) || shiftPressedRef.current);
           // Make brush selection visible with inline styles
+          brushGroup.selectAll('.selection')
+            .style('stroke', '#007bff')
+            .style('stroke-width', '2px')
+            .style('fill', 'rgba(0, 123, 255, 0.15)');
+        })
+        .on('brush', (event: any) => {
+          // Maintain same visual style during brush
           brushGroup.selectAll('.selection')
             .style('stroke', '#007bff')
             .style('stroke-width', '2px')
@@ -556,7 +583,17 @@ const Dendrogram: React.FC = () => {
           
           const selectedClusterIds = Array.from(allChildClusterIds);
           console.log('Dendrogram brush selected child clusters:', selectedClusterIds.length, selectedClusterIds);
-          selectClusters(selectedClusterIds);
+          // If Shift was held during the brush, add to existing selection instead of replacing
+          const shiftHeld = shiftDuringBrush || !!((event as any)?.sourceEvent?.shiftKey) || shiftPressedRef.current;
+          console.log('Dendrogram brush end - shiftDuringBrush:', shiftDuringBrush, 'sourceEvent.shiftKey:', (event as any)?.sourceEvent?.shiftKey, 'shiftPressedRef:', shiftPressedRef.current);
+          if (shiftHeld) {
+            const combined = new Set<number>([...selection.selectedClusterIds, ...selectedClusterIds]);
+            selectClusters(Array.from(combined));
+          } else {
+            selectClusters(selectedClusterIds);
+          }
+          // reset flag
+          shiftDuringBrush = false;
         });
 
       brushGroup.call(brush as any);

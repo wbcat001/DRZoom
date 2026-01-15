@@ -848,10 +848,22 @@ const DRVisualization: React.FC = () => {
           // Optional: preview selection during draw
           // console.log('Possible points:', possibleIds.length);
         },
-        onEnd: (selectedIds) => {
-          console.log('Lasso selection ended:', selectedIds.length, 'points');
-          selectPoints(selectedIds);
-          setPinnedNearbyClusterIds([]); // Clear pinned nearby clusters on new selection
+        onEnd: (selectedIds, shiftKey, ctrlKey) => {
+          console.log('Lasso selection ended:', selectedIds.length, 'points', shiftKey ? '(additive)' : ctrlKey ? '(subtract)' : '(replace)');
+          if (ctrlKey) {
+            // Subtractive selection: remove selectedIds from current selection
+            const remaining = new Set([...selection.selectedPointIds]);
+            for (const id of selectedIds) remaining.delete(id);
+            selectPoints(Array.from(remaining));
+          } else if (shiftKey) {
+            // Additive selection: combine with existing selection
+            const combined = new Set([...selection.selectedPointIds, ...selectedIds]);
+            selectPoints(Array.from(combined));
+          } else {
+            // Replace selection
+            selectPoints(selectedIds);
+            setPinnedNearbyClusterIds([]); // Clear pinned nearby clusters on new selection
+          }
         }
       });
       

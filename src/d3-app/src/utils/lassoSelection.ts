@@ -19,8 +19,8 @@ export interface LassoOptions {
   onStart?: () => void;
   /** Callback during drawing */
   onDraw?: (possibleIds: number[]) => void;
-  /** Callback when selection ends */
-  onEnd?: (selectedIds: number[]) => void;
+  /** Callback when selection ends (receives selected IDs, shift key state, and ctrl key state) */
+  onEnd?: (selectedIds: number[], shiftKey: boolean, ctrlKey: boolean) => void;
   /** Whether to ignore noise points */
   ignoreNoise?: boolean;
 }
@@ -33,12 +33,14 @@ export class LassoSelection {
   private yScale: d3.ScaleLinear<number, number>;
   private onStart?: () => void;
   private onDraw?: (possibleIds: number[]) => void;
-  private onEnd?: (selectedIds: number[]) => void;
+  private onEnd?: (selectedIds: number[], shiftKey: boolean, ctrlKey: boolean) => void;
   private ignoreNoise: boolean;
   
   private path: d3.Selection<SVGPathElement, unknown, null, undefined> | null = null;
   private points: [number, number][] = [];
   private isDrawing: boolean = false;
+  private shiftKeyPressed: boolean = false;
+  private ctrlKeyPressed: boolean = false;
 
   constructor(options: LassoOptions) {
     this.container = options.container;
@@ -66,28 +68,29 @@ export class LassoSelection {
       .style('stroke-dasharray', '5,5')
       .style('pointer-events', 'none');
 
-    // Attach events to SVG for better event capture
-    this.svg.on('mousedown.lasso', (event: MouseEvent) => {
-      // Only start lasso on background (not on points)
+    // Attach events to container for consistent behavior with brush
+    this.container.on('mousedown.lasso', (event: MouseEvent) => {
+      // Prevent starting lasso on circles (points)
       const target = event.target as Element;
-      if (target.tagName === 'rect' || target.tagName === 'svg') {
-        this.startLasso(event);
+      if (target.tagName === 'circle') {
+        return; // Let point click handler work
       }
+      this.startLasso(event);
     });
 
-    this.svg.on('mousemove.lasso', (event: MouseEvent) => {
+    this.container.on('mousemove.lasso', (event: MouseEvent) => {
       if (this.isDrawing) {
         this.drawLasso(event);
       }
     });
 
-    this.svg.on('mouseup.lasso', () => {
+    this.container.on('mouseup.lasso', () => {
       if (this.isDrawing) {
         this.endLasso();
       }
     });
 
-    this.svg.on('mouseleave.lasso', () => {
+    this.container.on('mouseleave.lasso', () => {
       if (this.isDrawing) {
         this.cancelLasso();
       }
@@ -101,10 +104,10 @@ export class LassoSelection {
     this.path?.remove();
     this.path = null;
     
-    this.svg.on('mousedown.lasso', null);
-    this.svg.on('mousemove.lasso', null);
-    this.svg.on('mouseup.lasso', null);
-    this.svg.on('mouseleave.lasso', null);
+    this.container.on('mousedown.lasso', null);
+    this.container.on('mousemove.lasso', null);
+    this.container.on('mouseup.lasso', null);
+    this.container.on('mouseleave.lasso', null);
   }
 
   /**
@@ -115,8 +118,14 @@ export class LassoSelection {
     event.stopPropagation();
     
     this.isDrawing = true;
+    this.shiftKeyPressed = event.shiftKey;
+    // treat metaKey (Cmd) as ctrl for Mac users
+    this.ctrlKeyPressed = !!(event.ctrlKey || (event as any).metaKey);
     const [x, y] = d3.pointer(event, this.container.node());
     this.points = [[x, y]];
+    
+    // Disable pointer events on points during lasso selection
+    this.container.selectAll('circle').style('pointer-events', 'none');
     
     this.updatePath();
     this.onStart?.();
@@ -147,6 +156,9 @@ export class LassoSelection {
   private endLasso(): void {
     this.isDrawing = false;
     
+    // Re-enable pointer events on points
+    this.container.selectAll('circle').style('pointer-events', null);
+    
     // Close the polygon
     if (this.points.length > 2) {
       this.points.push(this.points[0]);
@@ -155,7 +167,7 @@ export class LassoSelection {
     
     // Get final selected points
     const selectedIds = this.getPointsInPolygon();
-    this.onEnd?.(selectedIds);
+    this.onEnd?.(selectedIds, this.shiftKeyPressed, this.ctrlKeyPressed);
     
     // Clear lasso
     this.clear();
@@ -166,6 +178,10 @@ export class LassoSelection {
    */
   private cancelLasso(): void {
     this.isDrawing = false;
+    
+    // Re-enable pointer events on points
+    this.container.selectAll('circle').style('pointer-events', null);
+    
     this.clear();
   }
 
