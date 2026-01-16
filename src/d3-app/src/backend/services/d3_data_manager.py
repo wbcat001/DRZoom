@@ -291,11 +291,11 @@ class D3DataManager:
                         cluster_colors = compute_cluster_colors_from_similarity(
                             similarities_dict,
                             cluster_ids=list(unique_clusters),
-                            scaling_type='robust',
+                            scaling_type='linear',
                             hsv_mapping=('H', 'S', 'V'),
-                            value_range=(0.6, 1.0)  # avoid too dark values
+                            value_range=(0.3, 1.0)  # avoid too dark values
                         )
-
+kkk
                         # Apply colors to points if available
                         if cluster_colors:
                             print(f"✓ [COLOR_METRIC] Generated colors for {len(cluster_colors)} clusters", flush=True)

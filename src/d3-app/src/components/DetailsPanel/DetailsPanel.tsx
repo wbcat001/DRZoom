@@ -5,7 +5,7 @@ import { apiClient } from '../../api/client';
 import type { PointDetail } from '../../types';
 import './DetailsPanel.css';
 
-type TabType = 'point-details' | 'selection-stats' | 'cluster-size' | 'system-log';
+type TabType = 'point-details' | 'selection-stats' | 'dr-selection' | 'cluster-size' | 'system-log';
 
 const DetailsPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('selection-stats');
@@ -18,6 +18,7 @@ const DetailsPanel: React.FC = () => {
   const tabs: Array<{ id: TabType; label: string }> = [
     { id: 'point-details', label: 'Point Details' },
     { id: 'selection-stats', label: 'Selection Stats' },
+    { id: 'dr-selection', label: 'DR Selection' },
     { id: 'cluster-size', label: 'Cluster Size' },
     { id: 'system-log', label: 'System Log' }
   ];
@@ -183,6 +184,60 @@ const DetailsPanel: React.FC = () => {
                       <span className="cluster-size">{formatClusterSize(cluster.size)} points</span>
                     </div>
                   ))}
+                </div>
+              </>
+            )}
+          </div>
+        );
+
+      case 'dr-selection':
+        // Focused view for DR (lasso) selections
+        const drSelectedClusters = Array.from(selection.drSelectedClusterIds);
+        const drSelectedPoints = Array.from(selection.selectedPointIds);
+
+        const drClusterDetails = drSelectedClusters.map((clusterId) => {
+          const size = data.points.filter((p) => p.c === clusterId).length;
+          const label = data.clusterNames[clusterId] || `Cluster ${clusterId}`;
+          return { id: clusterId, size, label };
+        });
+
+        return (
+          <div className="tab-content-area">
+            <h5>DR (Lasso) Selection</h5>
+            <div className="info-item">
+              <strong>Selected Points (DR):</strong> <span>{drSelectedPoints.length}</span>
+            </div>
+            <div className="info-item">
+              <strong>DR-Selected Clusters:</strong> <span>{drSelectedClusters.length}</span>
+            </div>
+
+            {drClusterDetails.length > 0 && (
+              <>
+                <h6 style={{ marginTop: '12px' }}>Clusters Intersecting DR Selection</h6>
+                <div className="cluster-list">
+                  {drClusterDetails.map((cluster) => (
+                    <div key={cluster.id} className="cluster-item">
+                      <span className="cluster-name">{cluster.label}</span>
+                      <span className="cluster-size">{formatClusterSize(cluster.size)} pts</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {drSelectedPoints.length > 0 && (
+              <>
+                <h6 style={{ marginTop: '12px' }}>Example Points</h6>
+                <div className="neighbor-list">
+                  {drSelectedPoints.slice(0, 30).map((pid) => {
+                    const p = data.points.find((pp) => pp.i === pid);
+                    return (
+                      <div key={pid} className="neighbor-item">
+                        <span className="neighbor-label">{p?.l || `Point ${pid}`}</span>
+                        <span className="neighbor-meta">ID {pid} · C{p?.c}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </>
             )}

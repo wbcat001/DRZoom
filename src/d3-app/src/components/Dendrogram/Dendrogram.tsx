@@ -12,13 +12,15 @@ const Dendrogram: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const zoomTransformRef = useRef<any>(null);  // Store zoom transform
   const shiftPressedRef = useRef<boolean>(false);
-  const { selection, setDendrogramHovered, selectClusters } = useSelection();
+  const ctrlPressedRef = useRef<boolean>(false);
+  const { selection, setDendrogramHovered, selectClusters, setDRSelectedClusters } = useSelection();
   const { data } = useData();
   const { state, dispatch } = useAppContext();
 
   const [proportionalWidth, setProportionalWidth] = useState(false);
   const [showLabels, setShowLabels] = useState(false);
   const [brushEnabled, setBrushEnabled] = useState(false);
+  const [drBrushMode, setDrBrushMode] = useState(false);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [tooltip, setTooltip] = useState<{
     visible: boolean;
@@ -75,9 +77,11 @@ const Dendrogram: React.FC = () => {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Shift') shiftPressedRef.current = true;
+      if (e.key === 'Control' || e.key === 'Meta') ctrlPressedRef.current = true;
     };
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.key === 'Shift') shiftPressedRef.current = false;
+      if (e.key === 'Control' || e.key === 'Meta') ctrlPressedRef.current = false;
     };
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
@@ -511,11 +515,16 @@ const Dendrogram: React.FC = () => {
     if (brushEnabled) {
       const brushGroup = g.append('g').attr('class', 'brush-layer');
       let shiftDuringBrush = false;
+      let ctrlDuringBrush = false;
+      const leafCount = data.linkageMatrix.length + 1;
+
+      // Note: we only collect direct children (no recursive traversal)
       const brush = d3.brush()
         .extent([[0, 0], [width, height]])
         .on('start', (event: any) => {
           // Capture Shift key at the start of the brush (check global ref as fallback)
           shiftDuringBrush = !!((event && event.sourceEvent && event.sourceEvent.shiftKey) || shiftPressedRef.current);
+          ctrlDuringBrush = !!((event && event.sourceEvent && ((event.sourceEvent.ctrlKey) || (event.sourceEvent.metaKey))) || ctrlPressedRef.current);
           // Make brush selection visible with inline styles
           brushGroup.selectAll('.selection')
             .style('stroke', '#007bff')
@@ -532,7 +541,9 @@ const Dendrogram: React.FC = () => {
         .on('end', (event) => {
           if (!event.selection) {
             // Clear selection if brush is removed
-            selectClusters([]);
+            if (!drBrushMode) {
+              selectClusters([]);
+            }
             console.log('Brush cleared, reset cluster selection');
             return;
           }
@@ -563,37 +574,48 @@ const Dendrogram: React.FC = () => {
             }
           });
 
-          // Collect child cluster IDs from selected merges (only direct children, not recursive)
+          // Collect cluster IDs for selected merges (parent clusters and their descendants)
           const allChildClusterIds = new Set<number>();
           console.log(`Selected ${selectedMergeIndices.size} merge operations`);
-          
           selectedMergeIndices.forEach(mergeIdx => {
             const linkageEntry = data.linkageMatrix[mergeIdx];
-            if (linkageEntry) {
-              // Get actual cluster IDs for child1 and child2
-              const child1Id = data.clusterIdMap[linkageEntry.child1] ?? linkageEntry.child1;
-              const child2Id = data.clusterIdMap[linkageEntry.child2] ?? linkageEntry.child2;
-              
-              console.log(`Merge #${mergeIdx}: child1=${child1Id}, child2=${child2Id}`);
-              
-              allChildClusterIds.add(child1Id);
-              allChildClusterIds.add(child2Id);
-            }
+            if (!linkageEntry) return;
+            const child1Id = data.clusterIdMap[linkageEntry.child1] ?? linkageEntry.child1;
+            const child2Id = data.clusterIdMap[linkageEntry.child2] ?? linkageEntry.child2;
+            allChildClusterIds.add(child1Id as number);
+            allChildClusterIds.add(child2Id as number);
+            console.log(`Merge #${mergeIdx}: direct children -> ${child1Id}, ${child2Id}`);
           });
           
           const selectedClusterIds = Array.from(allChildClusterIds);
           console.log('Dendrogram brush selected child clusters:', selectedClusterIds.length, selectedClusterIds);
           // If Shift was held during the brush, add to existing selection instead of replacing
           const shiftHeld = shiftDuringBrush || !!((event as any)?.sourceEvent?.shiftKey) || shiftPressedRef.current;
-          console.log('Dendrogram brush end - shiftDuringBrush:', shiftDuringBrush, 'sourceEvent.shiftKey:', (event as any)?.sourceEvent?.shiftKey, 'shiftPressedRef:', shiftPressedRef.current);
-          if (shiftHeld) {
-            const combined = new Set<number>([...selection.selectedClusterIds, ...selectedClusterIds]);
-            selectClusters(Array.from(combined));
+          const ctrlHeld = ctrlDuringBrush || !!((event as any)?.sourceEvent?.ctrlKey) || !!((event as any)?.sourceEvent?.metaKey) || ctrlPressedRef.current;
+          console.log('Dendrogram brush end - shiftDuringBrush:', shiftDuringBrush, 'ctrlDuringBrush:', ctrlDuringBrush, 'sourceEvent.shiftKey:', (event as any)?.sourceEvent?.shiftKey, 'sourceEvent.ctrlKey:', (event as any)?.sourceEvent?.ctrlKey, 'shiftPressedRef:', shiftPressedRef.current, 'ctrlPressedRef:', ctrlPressedRef.current);
+
+          if (drBrushMode) {
+            // Modify DR selection set: union when normal (or shift), subtract when Ctrl held
+            const current = new Set<number>(Array.from(selection.drSelectedClusterIds));
+            if (ctrlHeld) {
+              // subtract selectedClusterIds
+              selectedClusterIds.forEach(id => current.delete(id));
+            } else {
+              // add (union)
+              selectedClusterIds.forEach(id => current.add(id));
+            }
+            setDRSelectedClusters(Array.from(current));
           } else {
-            selectClusters(selectedClusterIds);
+            if (shiftHeld) {
+              const combined = new Set<number>([...selection.selectedClusterIds, ...selectedClusterIds]);
+              selectClusters(Array.from(combined));
+            } else {
+              selectClusters(selectedClusterIds);
+            }
           }
-          // reset flag
+          // reset flags
           shiftDuringBrush = false;
+          ctrlDuringBrush = false;
         });
 
       brushGroup.call(brush as any);
@@ -615,7 +637,7 @@ const Dendrogram: React.FC = () => {
     }
 
     console.log('Dendrogram rendering COMPLETE');
-  }, [dendrogramData, selection, margin, brushEnabled, selectClusters, setDendrogramHovered]);
+  }, [dendrogramData, selection, margin, brushEnabled, selectClusters, setDendrogramHovered, drBrushMode, setDRSelectedClusters]);
 
   return (
     <div ref={containerRef} className="panel dendrogram-container">
@@ -645,6 +667,14 @@ const Dendrogram: React.FC = () => {
               onChange={(e) => setBrushEnabled(e.target.checked)}
             />
             <span>Brush Selection</span>
+          </label>
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={drBrushMode}
+              onChange={(e) => setDrBrushMode(e.target.checked)}
+            />
+            <span>DR Selection</span>
           </label>
           <label className="select-label">
             <span>Sort:</span>

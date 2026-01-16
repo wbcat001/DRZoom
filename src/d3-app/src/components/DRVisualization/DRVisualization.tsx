@@ -26,6 +26,9 @@ const DRVisualization: React.FC = () => {
   const [lassoEnabled, setLassoEnabled] = useState<boolean>(false);
   const [showHoverWords, setShowHoverWords] = useState<boolean>(true);
   const [showAnnotations, setShowAnnotations] = useState<boolean>(true);
+  const [drBlackMode, setDrBlackMode] = useState<boolean>(false);
+  const [randomColorMode, setRandomColorMode] = useState<boolean>(false);
+  const [randomSeed, setRandomSeed] = useState<number>(12345);
   const [containmentThreshold, setContainmentThreshold] = useState<number>(0.1);
   const [isZoomProcessing, setIsZoomProcessing] = useState<boolean>(false);
   const [nearbyClusterParams, setNearbyClusterParams] = useState<NearbyClusterParams>({
@@ -72,6 +75,26 @@ const DRVisualization: React.FC = () => {
       .range(d3.schemeCategory10);
   }, [displayData.points]);
 
+  // Seeded RNG (mulberry32) and deterministic color per cluster
+  const mulberry32 = (a: number) => {
+    return () => {
+      let t = a += 0x6D2B79F5;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  };
+
+  const getSeededColor = (clusterId: number) => {
+    const seed = (randomSeed || 0) + (clusterId || 0);
+    const rng = mulberry32(seed);
+    const r = Math.floor(rng() * 256);
+    const g = Math.floor(rng() * 256);
+    const b = Math.floor(rng() * 256);
+    const toHex = (v: number) => v.toString(16).padStart(2, '0');
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  };
+
   const [tooltip, setTooltip] = useState<{
     visible: boolean;
     x: number;
@@ -104,16 +127,21 @@ const DRVisualization: React.FC = () => {
   // Apply opacity and color highlighting to nearby clusters (called when nearbyClusterIds changes)
   const applyNearbyStroke = useCallback(() => {
     if (!circlesRef.current) return;
+    // Consider both nearbyClusterIds and drSelectedClusterIds as highlights
+    const highlightedClusters = new Set<number>([
+      ...Array.from(selection.nearbyClusterIds),
+      ...Array.from(selection.drSelectedClusterIds)
+    ]);
 
-    const hasNearbyHighlight = selection.nearbyClusterIds.size > 0;
+    const hasNearbyHighlight = highlightedClusters.size > 0;
 
     // Update opacity
     circlesRef.current
       .attr('opacity', (d: Point) => {
-        // If any nearby clusters are highlighted
+        // If any highlight clusters exist
         if (hasNearbyHighlight) {
-          // Points in nearby clusters get full opacity
-          if (selection.nearbyClusterIds.has(d.c)) {
+          // Points in highlighted clusters get full opacity
+          if (highlightedClusters.has(d.c)) {
             return 1.0;
           }
           // Other points get dimmed
@@ -141,7 +169,7 @@ const DRVisualization: React.FC = () => {
       
     // When nearby highlight is active, keep original cluster colors by not changing fill
     // The fill was already set during initial rendering, so we just adjust opacity
-  }, [selection.nearbyClusterIds, selection.selectedClusterIds, selection.selectedPointIds, selection.heatmapClickedClusters, hoveredClusterIds, selection.searchResultPointIds]);
+  }, [selection.nearbyClusterIds, selection.drSelectedClusterIds, selection.selectedClusterIds, selection.selectedPointIds, selection.heatmapClickedClusters, hoveredClusterIds, selection.searchResultPointIds]);
 
   // Update dimensions on container resize
   useEffect(() => {
@@ -283,6 +311,16 @@ const DRVisualization: React.FC = () => {
       );
       const style = getElementStyle(highlight, anyActive);
       
+      // If DR black mode is active, paint all DR points black regardless of other color logic
+      if (drBlackMode) {
+        return '#000000';
+      }
+
+      // If random color mode is active, return a deterministic color per cluster
+      if (randomColorMode) {
+        return getSeededColor(d.c);
+      }
+
       // If nearby highlighting is active and this point is in a nearby cluster,
       // prioritize cluster color over selection colors
       if (selection.nearbyClusterIds.size > 0 && selection.nearbyClusterIds.has(d.c)) {
@@ -302,7 +340,7 @@ const DRVisualization: React.FC = () => {
       }
       return colorScale(d.c.toString()) as string;
     });
-  }, [selection.nearbyClusterIds, selection.selectedClusterIds, selection.selectedPointIds, selection.heatmapClickedClusters, hoveredClusterIds, selection.searchResultPointIds, colorScale]);
+  }, [selection.nearbyClusterIds, selection.selectedClusterIds, selection.selectedPointIds, selection.heatmapClickedClusters, hoveredClusterIds, selection.searchResultPointIds, colorScale, drBlackMode, randomColorMode, randomSeed, selection.drSelectedClusterIds]);
 
   // Handle zoom redraw for selected points
   const handleZoomRedraw = useCallback(async () => {
@@ -516,8 +554,18 @@ const DRVisualization: React.FC = () => {
         );
         const style = getElementStyle(highlight, anyActive);
         
-        // If nearby highlighting is active and this point is in a nearby cluster,
-        // prioritize cluster color over selection colors
+          // If DR black mode is active, paint all DR points black regardless of other color logic
+          if (drBlackMode) {
+            return '#000000';
+          }
+
+          // If random color mode is active, return a deterministic color per cluster
+          if (randomColorMode) {
+            return getSeededColor(d.c);
+          }
+
+          // If nearby highlighting is active and this point is in a nearby cluster,
+          // prioritize cluster color over selection colors
         if (selection.nearbyClusterIds.size > 0 && selection.nearbyClusterIds.has(d.c)) {
           if (d.color) {
             return d.color as string;
@@ -892,7 +940,10 @@ const DRVisualization: React.FC = () => {
     brushEnabled,
     lassoEnabled,
     showAnnotations,
-    applyNearbyStroke
+    applyNearbyStroke,
+    drBlackMode,
+    randomColorMode,
+    randomSeed
   ]);
 
   // Cleanup lasso on unmount
@@ -984,6 +1035,31 @@ const DRVisualization: React.FC = () => {
                 onChange={(e) => setShowAnnotations(e.target.checked)}
               />
               <span>Cluster annotations</span>
+            </label>
+            <label className="mode-toggle">
+              <input
+                type="checkbox"
+                checked={drBlackMode}
+                onChange={(e) => setDrBlackMode(e.target.checked)}
+              />
+              <span>DR points black</span>
+            </label>
+            <label className="mode-toggle">
+              <input
+                type="checkbox"
+                checked={randomColorMode}
+                onChange={(e) => setRandomColorMode(e.target.checked)}
+              />
+              <span>Random colors (seeded)</span>
+            </label>
+            <label className="mode-toggle">
+              <span style={{ marginRight: 6 }}>Seed</span>
+              <input
+                type="number"
+                value={randomSeed}
+                onChange={(e) => setRandomSeed(Number(e.target.value))}
+                style={{ width: 100 }}
+              />
             </label>
             <NearbyClusterConfig
               params={nearbyClusterParams}
